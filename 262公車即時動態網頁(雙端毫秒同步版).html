@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>262 公車 · 即時動態智慧站牌 (去程藍/回程紅 · RailIsland 風格)</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="262公車動態">
+  <meta name="theme-color" content="#0F172A">
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Google Fonts: Inter & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800;900&family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --blue-go: #0284C7;
+      --blue-glow: rgba(2, 132, 199, 0.55);
+      --blue-light: #38BDF8;
+      
+      --red-back: #E3002C;
+      --red-glow: rgba(227, 0, 44, 0.55);
+      --red-light: #FF3B56;
+      
+      --bg-dark: #0F172A;
+      --card-bg: rgba(15, 23, 42, 0.94);
+      --card-border: rgba(255, 255, 255, 0.16);
+      --text-main: #F8FAFC;
+      --text-dim: #94A3B8;
+      --accent-gold: #F59E0B;
+      --accent-green: #10B981;
+      
+      --led-bg: #090D16;
+      --led-amber: #FBBF24;
+      --led-green: #34D399;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: #E2E8F0;
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background: #E5E7EB;
+    }
+
+    /* Top Navigation Bar */
+    .top-navbar {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 10px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .route-pill {
+      background: linear-gradient(135deg, #0284C7 0%, #E3002C 100%);
+      color: #FFF;
+      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      padding: 4px 14px;
+      border-radius: 8px;
+      box-shadow: 0 0 14px rgba(227, 0, 44, 0.4);
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .route-pill span.sub {
+      font-size: 11px;
+      background: rgba(0,0,0,0.35);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .brand-text h1 {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-text p {
+      font-size: 11.5px;
+      color: var(--text-dim);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .color-legend {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .legend-go {
+      background: rgba(2, 132, 199, 0.25);
+      color: #38BDF8;
+      border: 1px solid rgba(2, 132, 199, 0.4);
+    }
+    .legend-back {
+      background: rgba(227, 0, 44, 0.25);
+      color: #FF4D6D;
+      border: 1px solid rgba(227, 0, 44, 0.4);
+    }
+
+    .dir-toggle {
+      display: flex;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .dir-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      padding: 6px 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .dir-btn.active.btn-go {
+      background: var(--blue-go);
+      color: #FFF;
+      box-shadow: 0 0 12px var(--blue-glow);
+    }
+
+    .dir-btn.active.btn-back {
+      background: var(--red-back);
+      color: #FFF;
+      box-shadow: 0 0 12px var(--red-glow);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .action-btn.active-mode {
+      background: var(--blue-go);
+      border-color: var(--blue-light);
+      box-shadow: 0 0 12px var(--blue-glow);
+    }
+
+    .layer-selector {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* =========================================================
+       VEHICLE MARKERS (BLUE FOR GO, RED FOR BACK)
+       ========================================================= */
+    .bus-marker-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+    }
+
+    /* GO BUS (BLUE 藍色) */
+    .bus-marker-pill.blue-go {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #0284C7;
+      border: 2px solid #38BDF8;
+      color: #FFF;
+      padding: 2.5px 8px;
+      border-radius: 18px;
+      font-size: 11px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+      box-shadow: 0 0 12px var(--blue-glow);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .bus-dot-beacon.blue-go {
+      width: 14px;
+      height: 14px;
+      background: #0284C7;
+      border: 2.5px solid #FFF;
+      border-radius: 50%;
+      margin-top: 3px;
+      position: relative;
+      box-shadow: 0 0 8px #0284C7;
+    }
+    .bus-dot-beacon.blue-go::after {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 2px solid #38BDF8;
+      opacity: 0.8;
+      animation: pulseBlue 1.6s infinite ease-out;
+    }
+    @keyframes pulseBlue {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(1.7); opacity: 0; }
+    }
+
+    /* BACK BUS (RED 紅色) */
+    .bus-marker-pill.red-back {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #E3002C;
+      border: 2px solid #FF3B56;
+      color: #FFF;
+      padding: 2.5px 8px;
+      border-radius: 18px;
+      font-size: 11px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+      box-shadow: 0 0 12px var(--red-glow);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .bus-dot-beacon.red-back {
+      width: 14px;
+      height: 14px;
+      background: #E3002C;
+      border: 2.5px solid #FFF;
+      border-radius: 50%;
+      margin-top: 3px;
+      position: relative;
+      box-shadow: 0 0 8px #E3002C;
+    }
+    .bus-dot-beacon.red-back::after {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 2px solid #FF3B56;
+      opacity: 0.8;
+      animation: pulseRed 1.6s infinite ease-out;
+    }
+    @keyframes pulseRed {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(1.7); opacity: 0; }
+    }
+
+    .bus-marker-container:hover .bus-marker-pill {
+      transform: scale(1.15);
+      border-color: #FFF;
+    }
+
+    /* Floating View State Notification */
+    .view-state-pill {
+      position: absolute;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .view-state-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #FFF;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+    .view-state-btn:hover {
+      background: var(--blue-go);
+    }
+
+    /* =========================================================
+       BOTTOM DASHBOARD / DIGITAL BUS STOP LED BOARD
+       ========================================================= */
+    .bottom-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      z-index: 1000;
+      width: 440px;
+      max-width: calc(100vw - 48px);
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      padding: 16px 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      transition: all 0.3s ease;
+    }
+
+    /* Smart Bus Stop Digital LED Screen Styling */
+    .led-board-box {
+      background: var(--led-bg);
+      border: 2px solid #334155;
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.7);
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .led-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+    }
+
+    .led-stn-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #F8FAFC;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .led-dir-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .led-bus-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .led-bus-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.15s;
+    }
+    .led-bus-row:last-child {
+      border-bottom: none;
+    }
+
+    .led-bus-col-order {
+      width: 22px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+
+    .led-bus-col-plate {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 900;
+      color: #FFF;
+      flex: 1;
+    }
+
+    .badge-plate-sm {
+      padding: 1.5px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #FFF;
+      font-weight: 900;
+    }
+    .badge-plate-sm.blue {
+      background: var(--blue-go);
+      border: 1px solid var(--blue-light);
+    }
+    .badge-plate-sm.red {
+      background: var(--red-back);
+      border: 1px solid var(--red-light);
+    }
+
+    .led-bus-col-loc {
+      font-size: 11.5px;
+      color: var(--text-dim);
+      margin-right: 12px;
+      white-space: nowrap;
+    }
+
+    .led-bus-col-eta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 900;
+      text-align: right;
+      min-width: 65px;
+    }
+
+    .eta-approaching {
+      color: var(--led-green);
+      animation: flashEta 1.4s infinite;
+    }
+    .eta-soon {
+      color: var(--led-amber);
+    }
+    .eta-normal {
+      color: #F8FAFC;
+    }
+
+    @keyframes flashEta {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    /* Mini Bus Preview Card */
+    .mini-bus-preview {
+      width: 100%;
+      height: 78px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 100%);
+      border-radius: 10px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+      margin-top: 10px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .mini-bus-preview:hover {
+      transform: translateY(-2px);
+      border-color: var(--blue-light);
+    }
+
+    .zoom-hint-badge {
+      position: absolute;
+      top: 5px;
+      right: 8px;
+      background: rgba(0,0,0,0.7);
+      color: #FFF;
+      font-size: 9.5px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.25);
+      font-weight: 600;
+    }
+
+    /* Stations Drawer */
+    .stations-drawer {
+      position: absolute;
+      top: 86px;
+      right: 14px;
+      bottom: 24px;
+      width: 330px;
+      z-index: 999;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      transform: translateX(0);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .stations-drawer.collapsed {
+      transform: translateX(350px);
+    }
+
+    .drawer-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .station-list-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 14px;
+    }
+
+    .station-list-wrap::-webkit-scrollbar {
+      width: 5px;
+    }
+    .station-list-wrap::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    .station-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .station-row:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .station-row.highlight-stop {
+      background: rgba(2, 132, 199, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+    }
+
+    .station-row.selected-pinned {
+      background: rgba(245, 158, 11, 0.25);
+      border: 1px solid rgba(245, 158, 11, 0.6);
+    }
+
+    .stn-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .stn-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      width: 18px;
+    }
+
+    .stn-node {
+      width: 8px;
+      height: 8px;
+      background: #64748B;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .station-row.highlight-stop .stn-node {
+      background: #38BDF8;
+      box-shadow: 0 0 8px #38BDF8;
+      transform: scale(1.3);
+    }
+
+    .station-row.selected-pinned .stn-node {
+      background: #F59E0B;
+      box-shadow: 0 0 8px #F59E0B;
+      transform: scale(1.4);
+    }
+
+    .stn-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stn-eta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent-gold);
+    }
+
+    /* Fullscreen Bus Modal */
+    .bus-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 2000;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .bus-modal-overlay.open {
+      display: flex;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .bus-modal-card {
+      background: #0E131F;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      width: 880px;
+      max-width: 95vw;
+      padding: 28px;
+      position: relative;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 20px rgba(2, 132, 199, 0.5);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #FFF;
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .modal-close-btn:hover {
+      background: var(--blue-go);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .modal-svg-display {
+      width: 100%;
+      background: #080B12;
+      border-radius: 14px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 22px;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .spec-item {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .spec-item .label {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .spec-item .val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #FFF;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Mobile RWD Optimization */
+    @media (max-width: 768px) {
+      .top-navbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 10px 14px;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+      }
+      .brand-section {
+        justify-content: space-between;
+      }
+      .brand-text h1 {
+        font-size: 14.5px;
+      }
+      .dir-toggle {
+        width: 100%;
+      }
+      .dir-btn {
+        flex: 1;
+        padding: 6px 4px;
+        font-size: 11.5px;
+      }
+      .nav-actions {
+        overflow-x: auto;
+        padding-bottom: 2px;
+        justify-content: flex-start;
+      }
+      .action-btn, .layer-selector {
+        font-size: 11.5px;
+        padding: 5px 8px;
+        white-space: nowrap;
+      }
+      .bottom-panel {
+        left: 10px;
+        right: 10px;
+        bottom: 12px;
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+        padding: 12px 14px;
+      }
+      .stations-drawer {
+        top: 140px;
+        right: 10px;
+        bottom: 12px;
+        width: calc(100vw - 20px);
+      }
+      .view-state-pill {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Leaflet Map Container -->
+  <div id="map"></div>
+
+  <!-- Top Navigation Bar -->
+  <div class="top-navbar">
+    <div class="brand-section">
+      <div class="route-pill">
+        262 <span class="sub">全程車</span>
+      </div>
+      <div class="brand-text">
+        <h1>262 智慧動態軌跡網 <span style="font-size: 11px; background: rgba(2,132,199,0.25); color: #38BDF8; padding: 2px 8px; border-radius: 12px; font-weight: 700;">數位站牌版</span></h1>
+        <p>
+          <span>大都會客運 · 德霖科大 ↔ 民生社區</span>
+          <span class="color-legend legend-go">🔵 去程車(藍)</span>
+          <span class="color-legend legend-back">🔴 回程車(紅)</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Direction Switcher -->
+    <div class="dir-toggle">
+      <button class="dir-btn active btn-go" id="dirGo" onclick="setDirection(0)">往 民生社區 (去程 · 藍)</button>
+      <button class="dir-btn btn-back" id="dirBack" onclick="setDirection(1)">往 德霖科大 (回程 · 紅)</button>
+    </div>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+      <!-- Map Layer Dropdown -->
+      <select class="layer-selector" id="layerSelect" onchange="changeMapLayer(this.value)">
+        <option value="google_road" selected>🗺️ Google 地圖 (街道)</option>
+        <option value="google_sat">🛰️ Google 衛星圖 (含地名)</option>
+        <option value="osm">🌐 OpenStreetMap</option>
+      </select>
+
+      <button class="action-btn" id="followBtn" onclick="toggleFollowMode()">
+        <span id="followIndicator" style="display:inline-block; width:8px; height:8px; background:#94A3B8; border-radius:50%;"></span>
+        <span id="followBtnText">隨機跟隨</span>
+      </button>
+
+      <button class="action-btn" onclick="openBusModal()">
+        🔍 放大公車圖
+      </button>
+
+      <button class="action-btn" onclick="fitRouteBounds()">
+        全線概覽
+      </button>
+
+      <button class="action-btn" onclick="toggleDrawer()">
+        📋 站牌清單
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating View State Pill -->
+  <div class="view-state-pill" id="viewStatePill">
+    <span id="viewStateIcon">🚏</span>
+    <span id="viewStateText">點選任何公車站體，即時顯示該站最近 5 班車剩餘時間與車號</span>
+    <button class="view-state-btn" id="viewStateResetBtn" onclick="resetToFreeView()" style="display:none;">解除固定</button>
+  </div>
+
+  <!-- Bottom Panel: Digital Bus Stop LED Screen -->
+  <div class="bottom-panel" id="bottomPanel">
+    <!-- LED Smart Sign Box -->
+    <div class="led-board-box">
+      <div class="led-header">
+        <div class="led-stn-title">
+          <span>🚏</span>
+          <span id="ledStationName">平和里 (燦坤金城店門口)</span>
+        </div>
+        <div class="led-dir-tag" id="ledDirTag" style="background:var(--blue-go); color:#FFF;">
+          去程 · 往民生社區
+        </div>
+      </div>
+
+      <!-- Approaching 5 Buses Table (公車站牌數位看板) -->
+      <div class="led-bus-table" id="ledBusList">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+    <!-- Mini Interactive Bus Preview (Click to open full bus illustration) -->
+    <div class="mini-bus-preview" onclick="openBusModal()" title="點擊放大檢視 262 大都會客運車輛細節">
+      <div class="zoom-hint-badge">點擊放大 262 大都會客運外觀圖 ↗</div>
+      <div style="width: 95%; max-height: 70px;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="evBodyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="75%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <linearGradient id="evWindowGlass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0F172A" stop-opacity="0.95"/>
+      <stop offset="35%" stop-color="#1E293B" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#020617" stop-opacity="0.98"/>
+    </linearGradient>
+    <linearGradient id="evWindshieldGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.35"/>
+      <stop offset="30%" stop-color="#0F172A" stop-opacity="0.92"/>
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="mtcGreenWave" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="mtcBlueAccent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0369A1"/>
+      <stop offset="60%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="tireRubber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <radialGradient id="rimAlloy" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="55%" stop-color="#CBD5E1"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </radialGradient>
+    <filter id="ledGlow262" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="busShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#busShadow)">
+    <!-- Road ground shadow -->
+    <ellipse cx="500" cy="305" rx="465" ry="18" fill="#000000" opacity="0.4" filter="blur(8px)"/>
+
+    <!-- Roof Battery Pods & AC System (Electric Bus Spec) -->
+    <rect x="230" y="36" width="260" height="22" rx="7" fill="#E2E8F0" stroke="#94A3B8" stroke-width="2"/>
+    <text x="360" y="52" fill="#047857" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="900" letter-spacing="1">⚡ ELECTRIC BUS BATTERY PACK</text>
+    
+    <rect x="520" y="40" width="180" height="18" rx="5" fill="#CBD5E1" stroke="#94A3B8" stroke-width="2"/>
+    <line x1="540" y1="46" x2="680" y2="46" stroke="#64748B" stroke-width="2" stroke-dasharray="6 3"/>
+    <line x1="540" y1="52" x2="680" y2="52" stroke="#64748B" stroke-width="2" stroke-dasharray="6 3"/>
+
+    <!-- Main Aerodynamic Body Shell -->
+    <path d="M 945 270 
+             L 945 98 
+             C 945 65 918 50 870 50 
+             L 95 50 
+             C 65 50 50 65 50 95 
+             L 50 270 
+             C 50 282 62 285 75 285 
+             L 160 285 
+             A 65 65 0 0 1 290 285 
+             L 690 285 
+             A 65 65 0 0 1 820 285 
+             L 915 285 
+             C 935 285 945 280 945 270 Z" 
+          fill="url(#evBodyGrad)" stroke="#475569" stroke-width="2"/>
+
+    <!-- Front Nose Streamline (Right Side = Front of Bus) -->
+    <path d="M 870 54 
+             L 936 96 
+             C 944 118 944 175 944 190 
+             L 865 190 
+             L 865 54 Z" 
+          fill="url(#evWindshieldGrad)" stroke="#0F172A" stroke-width="2"/>
+
+    <!-- Large Panoramic Tinted Side Windows -->
+    <rect x="75" y="65" width="780" height="120" rx="8" fill="url(#evWindowGlass)" stroke="#0F172A" stroke-width="2.5"/>
+
+    <!-- Window Pillars & Structural Ribs -->
+    <line x1="175" y1="65" x2="175" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="285" y1="65" x2="285" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="395" y1="65" x2="395" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="515" y1="65" x2="515" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="635" y1="65" x2="635" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="750" y1="65" x2="750" y2="185" stroke="#0F172A" stroke-width="4"/>
+
+    <!-- Modern Angled Window Sunlight Reflection -->
+    <polygon points="120,65 185,65 130,185 80,185" fill="#FFFFFF" opacity="0.12"/>
+    <polygon points="320,65 410,65 340,185 260,185" fill="#FFFFFF" opacity="0.12"/>
+    <polygon points="560,65 660,65 590,185 500,185" fill="#FFFFFF" opacity="0.12"/>
+    <polygon points="800,65 850,65 830,185 780,185" fill="#FFFFFF" opacity="0.12"/>
+
+    <!-- Front Door & Middle Low-Floor Doors -->
+    <!-- Front Entrance Door -->
+    <rect x="755" y="75" width="95" height="195" rx="3" fill="none" stroke="#334155" stroke-width="2"/>
+    <line x1="802" y1="75" x2="802" y2="270" stroke="#334155" stroke-width="2.5"/>
+    <rect x="760" y="80" width="38" height="100" rx="3" fill="#1E293B" opacity="0.65"/>
+    <rect x="807" y="80" width="38" height="100" rx="3" fill="#1E293B" opacity="0.65"/>
+    <rect x="755" y="266" width="95" height="5" fill="#EAB308"/>
+
+    <!-- Middle Extra-Wide Double Low-Floor Door -->
+    <rect x="400" y="75" width="110" height="195" rx="3" fill="none" stroke="#334155" stroke-width="2"/>
+    <line x1="455" y1="75" x2="455" y2="270" stroke="#334155" stroke-width="2.5"/>
+    <rect x="405" y="80" width="45" height="100" rx="3" fill="#1E293B" opacity="0.65"/>
+    <rect x="460" y="80" width="45" height="100" rx="3" fill="#1E293B" opacity="0.65"/>
+    <rect x="400" y="266" width="110" height="5" fill="#EAB308"/>
+
+    <!-- 大都會客運 (MTC) Signature Pure-Electric Green Energy Wave Livery -->
+    <!-- Cyan/Blue Wave Base -->
+    <path d="M 60 215 
+             Q 340 198, 520 225 
+             T 880 205 
+             L 880 226 
+             Q 680 242, 520 236 
+             T 60 228 Z" 
+          fill="url(#mtcBlueAccent)"/>
+
+    <!-- Vibrant Emerald Green Wave (大都會客運綠能塗裝) -->
+    <path d="M 60 228 
+             Q 350 218, 530 240 
+             T 940 218 
+             L 940 245 
+             Q 700 262, 530 252 
+             T 60 246 Z" 
+          fill="url(#mtcGreenWave)"/>
+
+    <!-- Metro Red Line Tribute Speed Line (#E3002C) -->
+    <path d="M 50 252 L 940 252 L 940 256 L 50 256 Z" fill="#E3002C" opacity="0.95"/>
+
+    <!-- Front & Side Electronic Destination Display (LED 行先板) -->
+    <!-- Side LED Sign: 262 德霖科大 ↔ 民生社區 -->
+    <rect x="520" y="75" width="115" height="28" rx="3" fill="#000000" stroke="#1E293B" stroke-width="1.5"/>
+    <text x="577" y="94" fill="#F59E0B" font-family="'Courier New', monospace, sans-serif" font-size="12.5" font-weight="900" text-anchor="middle" filter="url(#ledGlow262)">262 德霖-民生</text>
+
+    <!-- Front Top LED Sign (Header) -->
+    <rect x="862" y="60" width="75" height="36" rx="4" fill="#0A0A0A" stroke="#1E293B" stroke-width="1.5"/>
+    <text x="899" y="76" fill="#F59E0B" font-family="'Arial Black', sans-serif" font-size="15" font-weight="900" text-anchor="middle" filter="url(#ledGlow262)">262</text>
+    <text x="899" y="90" fill="#22C55E" font-family="sans-serif" font-size="8.5" font-weight="bold" text-anchor="middle">往 民生社區</text>
+
+    <!-- Operator Branding & Logos (大都會客運) -->
+    <g transform="translate(195, 204)">
+      <!-- MTC Logo Circle -->
+      <circle cx="10" cy="8" r="8" fill="#047857"/>
+      <path d="M 6 11 L 10 4 L 14 11 Z" fill="#FFFFFF"/>
+      <text x="24" y="14" fill="#0F172A" font-family="'Noto Sans TC', sans-serif" font-size="16" font-weight="900" letter-spacing="1">大都會客運</text>
+      <text x="110" y="13" fill="#64748B" font-family="'JetBrains Mono', sans-serif" font-size="10" font-weight="700">MTC BUS</text>
+    </g>
+
+    <!-- Route Badge on Body -->
+    <g transform="translate(130, 202)">
+      <rect x="0" y="-12" width="56" height="23" rx="4" fill="#E3002C"/>
+      <text x="28" y="4" fill="#FFFFFF" font-family="sans-serif" font-size="13" font-weight="900" text-anchor="middle">262</text>
+    </g>
+
+    <!-- License Plate (Taiwan Electric Bus Plate: Green Header or Green Border EAL-0126) -->
+    <g transform="translate(865, 252)">
+      <rect x="0" y="0" width="68" height="22" rx="3" fill="#FFFFFF" stroke="#047857" stroke-width="2"/>
+      <rect x="0" y="0" width="68" height="4" fill="#10B981"/>
+      <text x="34" y="16" fill="#0F172A" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="900" text-anchor="middle" letter-spacing="0.5">EAL-0126</text>
+    </g>
+
+    <!-- Accessibility & Electric Vehicle Icons -->
+    <circle cx="730" cy="208" r="9" fill="#0284C7"/>
+    <path d="M 727 203 A 2 2 0 1 1 731 203 A 2 2 0 1 1 727 203 M 729 206 L 729 211 L 733 211 M 729 208 L 733 208" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+    <!-- Green EV Plug Badge -->
+    <circle cx="705" cy="208" r="9" fill="#10B981"/>
+    <path d="M 702 206 L 705 204 L 705 212 L 708 210" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+    <!-- Front Projector LED Headlight Cluster -->
+    <path d="M 935 245 L 945 248 C 948 260 946 272 938 278 L 928 278 Z" fill="#0F172A"/>
+    <ellipse cx="940" cy="252" rx="5" ry="6" fill="#F8FAFC" stroke="#38BDF8" stroke-width="1.5" filter="url(#ledGlow262)"/>
+    <circle cx="941" cy="265" r="3.5" fill="#F59E0B"/>
+    <path d="M 938 250 L 970 240 L 970 265 Z" fill="#38BDF8" opacity="0.15"/>
+
+    <!-- Tail lights (Left Rear) -->
+    <rect x="49" y="240" width="5" height="14" rx="2" fill="#DC2626" filter="url(#ledGlow262)"/>
+    <rect x="49" y="258" width="5" height="10" rx="2" fill="#EA580C"/>
+
+    <!-- Front Rearview Mirror (Rabbit Ear) -->
+    <path d="M 890 60 Q 950 38, 962 68 L 958 110 Q 952 112, 948 100 L 950 70 Z" fill="#1E293B" stroke="#0F172A" stroke-width="1"/>
+    <rect x="950" y="68" width="14" height="44" rx="4" fill="#334155" stroke="#0F172A" stroke-width="1.5"/>
+    <rect x="952" y="71" width="10" height="38" rx="2" fill="#94A3B8" opacity="0.8"/>
+
+    <!-- Left Rearview Mirror -->
+    <path d="M 845 75 Q 830 65, 820 85 L 825 95 Z" fill="#1E293B"/>
+
+    <!-- WHEELS -->
+    <!-- Rear Wheel -->
+    <g transform="translate(225, 285)">
+      <path d="M -65 0 A 65 65 0 0 1 65 0 Z" fill="#0F172A"/>
+      <circle cx="0" cy="0" r="54" fill="url(#tireRubber)"/>
+      <circle cx="0" cy="0" r="44" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>
+      <circle cx="0" cy="0" r="34" fill="url(#rimAlloy)" stroke="#64748B" stroke-width="1"/>
+      <circle cx="0" cy="0" r="16" fill="#1E293B"/>
+      <circle cx="0" cy="0" r="8" fill="#F8FAFC"/>
+      <circle cx="0" cy="-24" r="3.5" fill="#334155"/>
+      <circle cx="21" cy="-12" r="3.5" fill="#334155"/>
+      <circle cx="21" cy="12" r="3.5" fill="#334155"/>
+      <circle cx="0" cy="24" r="3.5" fill="#334155"/>
+      <circle cx="-21" cy="12" r="3.5" fill="#334155"/>
+      <circle cx="-21" cy="-12" r="3.5" fill="#334155"/>
+    </g>
+
+    <!-- Front Wheel -->
+    <g transform="translate(755, 285)">
+      <path d="M -65 0 A 65 65 0 0 1 65 0 Z" fill="#0F172A"/>
+      <circle cx="0" cy="0" r="54" fill="url(#tireRubber)"/>
+      <circle cx="0" cy="0" r="44" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>
+      <circle cx="0" cy="0" r="34" fill="url(#rimAlloy)" stroke="#64748B" stroke-width="1"/>
+      <circle cx="0" cy="0" r="16" fill="#1E293B"/>
+      <circle cx="0" cy="0" r="8" fill="#F8FAFC"/>
+      <circle cx="0" cy="-24" r="3.5" fill="#334155"/>
+      <circle cx="21" cy="-12" r="3.5" fill="#334155"/>
+      <circle cx="21" cy="12" r="3.5" fill="#334155"/>
+      <circle cx="0" cy="24" r="3.5" fill="#334155"/>
+      <circle cx="-21" cy="12" r="3.5" fill="#334155"/>
+      <circle cx="-21" cy="-12" r="3.5" fill="#334155"/>
+    </g>
+  </g>
+</svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stations Drawer (Right Side) -->
+  <div class="stations-drawer" id="stationsDrawer">
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <span style="display:inline-block; width:8px; height:8px; background:var(--blue-go); border-radius:50%;"></span>
+        262 停靠站點 (點選即時固定視角)
+      </div>
+      <button style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:16px;" onclick="toggleDrawer()">✕</button>
+    </div>
+    <div class="station-list-wrap" id="stationListContainer">
+      <!-- Generated via JS -->
+    </div>
+  </div>
+
+  <!-- Fullscreen Zoomed Bus Modal -->
+  <div class="bus-modal-overlay" id="busModal" onclick="closeBusModalOnBackdrop(event)">
+    <div class="bus-modal-card">
+      <button class="modal-close-btn" onclick="closeBusModal()">✕</button>
+      
+      <div class="modal-header">
+        <div class="route-pill" style="font-size: 24px; padding: 6px 18px;">
+          262 <span class="sub">全程車</span>
+        </div>
+        <div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #FFF;">大都會客運 · 262 純電低地板公車 (EAL-0126)</h2>
+          <p style="font-size: 13px; color: var(--text-dim); margin-top: 2px;">
+            依據大都會客運 262 配車繪製 · 綠能純電塗裝、車頭高亮度橘黃 LED 點陣行先板、全低地板無障礙設備
+          </p>
+        </div>
+      </div>
+
+      <!-- High Resolution Vector Graphic Display -->
+      <div class="modal-svg-display">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="evBodyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="75%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <linearGradient id="evWindowGlass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0F172A" stop-opacity="0.95"/>
+      <stop offset="35%" stop-color="#1E293B" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#020617" stop-opacity="0.98"/>
+    </linearGradient>
+    <linearGradient id="evWindshieldGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.35"/>
+      <stop offset="30%" stop-color="#0F172A" stop-opacity="0.92"/>
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="mtcGreenWave" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="mtcBlueAccent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0369A1"/>
+      <stop offset="60%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="tireRubber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <radialGradient id="rimAlloy" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="55%" stop-color="#CBD5E1"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </radialGradient>
+    <filter id="ledGlow262" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="busShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#busShadow)">
+    <!-- Road ground shadow -->
+    <ellipse cx="500" cy="305" rx="465" ry="18" fill="#000000" opacity="0.4" filter="blur(8px)"/>
+
+    <!-- Roof Battery Pods & AC System (Electric Bus Spec) -->
+    <rect x="230" y="36" width="260" height="22" rx="7" fill="#E2E8F0" stroke="#94A3B8" stroke-width="2"/>
+    <text x="360" y="52" fill="#047857" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="900" letter-spacing="1">⚡ ELECTRIC BUS BATTERY PACK</text>
+    
+    <rect x="520" y="40" width="180" height="18" rx="5" fill="#CBD5E1" stroke="#94A3B8" stroke-width="2"/>
+    <line x1="540" y1="46" x2="680" y2="46" stroke="#64748B" stroke-width="2" stroke-dasharray="6 3"/>
+    <line x1="540" y1="52" x2="680" y2="52" stroke="#64748B" stroke-width="2" stroke-dasharray="6 3"/>
+
+    <!-- Main Aerodynamic Body Shell -->
+    <path d="M 945 270 
+             L 945 98 
+             C 945 65 918 50 870 50 
+             L 95 50 
+             C 65 50 50 65 50 95 
+             L 50 270 
+             C 50 282 62 285 75 285 
+             L 160 285 
+             A 65 65 0 0 1 290 285 
+             L 690 285 
+             A 65 65 0 0 1 820 285 
+             L 915 285 
+             C 935 285 945 280 945 270 Z" 
+          fill="url(#evBodyGrad)" stroke="#475569" stroke-width="2"/>
+
+    <!-- Front Nose Streamline (Right Side = Front of Bus) -->
+    <path d="M 870 54 
+             L 936 96 
+             C 944 118 944 175 944 190 
+             L 865 190 
+             L 865 54 Z" 
+          fill="url(#evWindshieldGrad)" stroke="#0F172A" stroke-width="2"/>
+
+    <!-- Large Panoramic Tinted Side Windows -->
+    <rect x="75" y="65" width="780" height="120" rx="8" fill="url(#evWindowGlass)" stroke="#0F172A" stroke-width="2.5"/>
+
+    <!-- Window Pillars & Structural Ribs -->
+    <line x1="175" y1="65" x2="175" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="285" y1="65" x2="285" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="395" y1="65" x2="395" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="515" y1="65" x2="515" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="635" y1="65" x2="635" y2="185" stroke="#0F172A" stroke-width="4"/>
+    <line x1="750" y1="65" x2="750" y2="185" stroke="#0F172A" stroke-width="4"/>
+
+    <!-- Modern Angled Window Sunlight Reflection -->
+    <polygon points="120,65 185,65 130,185 80,185" fill="#FFFFFF" opacity="0.12"/>
+    <polygon points="320,65 410,65 340,185 260,185" fill="#FFFFFF" opacity="0.12"/>
+    <polygon points="560,65 660,65 590,185 500,185" fill="#FFFFFF" opacity="0.12"/>
+    <polygon points="800,65 850,65 830,185 780,185" fill="#FFFFFF" opacity="0.12"/>
+
+    <!-- Front Door & Middle Low-Floor Doors -->
+    <!-- Front Entrance Door -->
+    <rect x="755" y="75" width="95" height="195" rx="3" fill="none" stroke="#334155" stroke-width="2"/>
+    <line x1="802" y1="75" x2="802" y2="270" stroke="#334155" stroke-width="2.5"/>
+    <rect x="760" y="80" width="38" height="100" rx="3" fill="#1E293B" opacity="0.65"/>
+    <rect x="807" y="80" width="38" height="100" rx="3" fill="#1E293B" opacity="0.65"/>
+    <rect x="755" y="266" width="95" height="5" fill="#EAB308"/>
+
+    <!-- Middle Extra-Wide Double Low-Floor Door -->
+    <rect x="400" y="75" width="110" height="195" rx="3" fill="none" stroke="#334155" stroke-width="2"/>
+    <line x1="455" y1="75" x2="455" y2="270" stroke="#334155" stroke-width="2.5"/>
+    <rect x="405" y="80" width="45" height="100" rx="3" fill="#1E293B" opacity="0.65"/>
+    <rect x="460" y="80" width="45" height="100" rx="3" fill="#1E293B" opacity="0.65"/>
+    <rect x="400" y="266" width="110" height="5" fill="#EAB308"/>
+
+    <!-- 大都會客運 (MTC) Signature Pure-Electric Green Energy Wave Livery -->
+    <!-- Cyan/Blue Wave Base -->
+    <path d="M 60 215 
+             Q 340 198, 520 225 
+             T 880 205 
+             L 880 226 
+             Q 680 242, 520 236 
+             T 60 228 Z" 
+          fill="url(#mtcBlueAccent)"/>
+
+    <!-- Vibrant Emerald Green Wave (大都會客運綠能塗裝) -->
+    <path d="M 60 228 
+             Q 350 218, 530 240 
+             T 940 218 
+             L 940 245 
+             Q 700 262, 530 252 
+             T 60 246 Z" 
+          fill="url(#mtcGreenWave)"/>
+
+    <!-- Metro Red Line Tribute Speed Line (#E3002C) -->
+    <path d="M 50 252 L 940 252 L 940 256 L 50 256 Z" fill="#E3002C" opacity="0.95"/>
+
+    <!-- Front & Side Electronic Destination Display (LED 行先板) -->
+    <!-- Side LED Sign: 262 德霖科大 ↔ 民生社區 -->
+    <rect x="520" y="75" width="115" height="28" rx="3" fill="#000000" stroke="#1E293B" stroke-width="1.5"/>
+    <text x="577" y="94" fill="#F59E0B" font-family="'Courier New', monospace, sans-serif" font-size="12.5" font-weight="900" text-anchor="middle" filter="url(#ledGlow262)">262 德霖-民生</text>
+
+    <!-- Front Top LED Sign (Header) -->
+    <rect x="862" y="60" width="75" height="36" rx="4" fill="#0A0A0A" stroke="#1E293B" stroke-width="1.5"/>
+    <text x="899" y="76" fill="#F59E0B" font-family="'Arial Black', sans-serif" font-size="15" font-weight="900" text-anchor="middle" filter="url(#ledGlow262)">262</text>
+    <text x="899" y="90" fill="#22C55E" font-family="sans-serif" font-size="8.5" font-weight="bold" text-anchor="middle">往 民生社區</text>
+
+    <!-- Operator Branding & Logos (大都會客運) -->
+    <g transform="translate(195, 204)">
+      <!-- MTC Logo Circle -->
+      <circle cx="10" cy="8" r="8" fill="#047857"/>
+      <path d="M 6 11 L 10 4 L 14 11 Z" fill="#FFFFFF"/>
+      <text x="24" y="14" fill="#0F172A" font-family="'Noto Sans TC', sans-serif" font-size="16" font-weight="900" letter-spacing="1">大都會客運</text>
+      <text x="110" y="13" fill="#64748B" font-family="'JetBrains Mono', sans-serif" font-size="10" font-weight="700">MTC BUS</text>
+    </g>
+
+    <!-- Route Badge on Body -->
+    <g transform="translate(130, 202)">
+      <rect x="0" y="-12" width="56" height="23" rx="4" fill="#E3002C"/>
+      <text x="28" y="4" fill="#FFFFFF" font-family="sans-serif" font-size="13" font-weight="900" text-anchor="middle">262</text>
+    </g>
+
+    <!-- License Plate (Taiwan Electric Bus Plate: Green Header or Green Border EAL-0126) -->
+    <g transform="translate(865, 252)">
+      <rect x="0" y="0" width="68" height="22" rx="3" fill="#FFFFFF" stroke="#047857" stroke-width="2"/>
+      <rect x="0" y="0" width="68" height="4" fill="#10B981"/>
+      <text x="34" y="16" fill="#0F172A" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="900" text-anchor="middle" letter-spacing="0.5">EAL-0126</text>
+    </g>
+
+    <!-- Accessibility & Electric Vehicle Icons -->
+    <circle cx="730" cy="208" r="9" fill="#0284C7"/>
+    <path d="M 727 203 A 2 2 0 1 1 731 203 A 2 2 0 1 1 727 203 M 729 206 L 729 211 L 733 211 M 729 208 L 733 208" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+    <!-- Green EV Plug Badge -->
+    <circle cx="705" cy="208" r="9" fill="#10B981"/>
+    <path d="M 702 206 L 705 204 L 705 212 L 708 210" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+    <!-- Front Projector LED Headlight Cluster -->
+    <path d="M 935 245 L 945 248 C 948 260 946 272 938 278 L 928 278 Z" fill="#0F172A"/>
+    <ellipse cx="940" cy="252" rx="5" ry="6" fill="#F8FAFC" stroke="#38BDF8" stroke-width="1.5" filter="url(#ledGlow262)"/>
+    <circle cx="941" cy="265" r="3.5" fill="#F59E0B"/>
+    <path d="M 938 250 L 970 240 L 970 265 Z" fill="#38BDF8" opacity="0.15"/>
+
+    <!-- Tail lights (Left Rear) -->
+    <rect x="49" y="240" width="5" height="14" rx="2" fill="#DC2626" filter="url(#ledGlow262)"/>
+    <rect x="49" y="258" width="5" height="10" rx="2" fill="#EA580C"/>
+
+    <!-- Front Rearview Mirror (Rabbit Ear) -->
+    <path d="M 890 60 Q 950 38, 962 68 L 958 110 Q 952 112, 948 100 L 950 70 Z" fill="#1E293B" stroke="#0F172A" stroke-width="1"/>
+    <rect x="950" y="68" width="14" height="44" rx="4" fill="#334155" stroke="#0F172A" stroke-width="1.5"/>
+    <rect x="952" y="71" width="10" height="38" rx="2" fill="#94A3B8" opacity="0.8"/>
+
+    <!-- Left Rearview Mirror -->
+    <path d="M 845 75 Q 830 65, 820 85 L 825 95 Z" fill="#1E293B"/>
+
+    <!-- WHEELS -->
+    <!-- Rear Wheel -->
+    <g transform="translate(225, 285)">
+      <path d="M -65 0 A 65 65 0 0 1 65 0 Z" fill="#0F172A"/>
+      <circle cx="0" cy="0" r="54" fill="url(#tireRubber)"/>
+      <circle cx="0" cy="0" r="44" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>
+      <circle cx="0" cy="0" r="34" fill="url(#rimAlloy)" stroke="#64748B" stroke-width="1"/>
+      <circle cx="0" cy="0" r="16" fill="#1E293B"/>
+      <circle cx="0" cy="0" r="8" fill="#F8FAFC"/>
+      <circle cx="0" cy="-24" r="3.5" fill="#334155"/>
+      <circle cx="21" cy="-12" r="3.5" fill="#334155"/>
+      <circle cx="21" cy="12" r="3.5" fill="#334155"/>
+      <circle cx="0" cy="24" r="3.5" fill="#334155"/>
+      <circle cx="-21" cy="12" r="3.5" fill="#334155"/>
+      <circle cx="-21" cy="-12" r="3.5" fill="#334155"/>
+    </g>
+
+    <!-- Front Wheel -->
+    <g transform="translate(755, 285)">
+      <path d="M -65 0 A 65 65 0 0 1 65 0 Z" fill="#0F172A"/>
+      <circle cx="0" cy="0" r="54" fill="url(#tireRubber)"/>
+      <circle cx="0" cy="0" r="44" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>
+      <circle cx="0" cy="0" r="34" fill="url(#rimAlloy)" stroke="#64748B" stroke-width="1"/>
+      <circle cx="0" cy="0" r="16" fill="#1E293B"/>
+      <circle cx="0" cy="0" r="8" fill="#F8FAFC"/>
+      <circle cx="0" cy="-24" r="3.5" fill="#334155"/>
+      <circle cx="21" cy="-12" r="3.5" fill="#334155"/>
+      <circle cx="21" cy="12" r="3.5" fill="#334155"/>
+      <circle cx="0" cy="24" r="3.5" fill="#334155"/>
+      <circle cx="-21" cy="12" r="3.5" fill="#334155"/>
+      <circle cx="-21" cy="-12" r="3.5" fill="#334155"/>
+    </g>
+  </g>
+</svg>
+      </div>
+
+      <!-- Specs & Details Grid -->
+      <div class="specs-grid">
+        <div class="spec-item">
+          <div class="label">代表車號</div>
+          <div class="val" style="color: var(--accent-gold);">EAL-0126 / EAL-0152</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">營運業者 / 調度站</div>
+          <div class="val">大都會客運 四海站 / 民生站</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">行駛區間</div>
+          <div class="val">德霖科大 ↔ 民生社區</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">動力型態</div>
+          <div class="val" style="color: var(--accent-green);">⚡ 純電低地板 / 雙門 / USB</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">土城金城路燦坤</div>
+          <div class="val" style="color: var(--accent-gold);">停靠 平和里 / 永豐路口</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">中和 COSTCO 好市多</div>
+          <div class="val" style="color: var(--accent-gold);">停靠 中和保養廠 (正門口)</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">雙向顏色識別</div>
+          <div class="val" style="color: #38BDF8;">去程(藍) / 回程(紅)</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">收費方式</div>
+          <div class="val" style="color: var(--red-light);">兩段票 (一女中-北車緩衝區)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load station dataset for 262
+    const stations = [
+  {
+    "id": "01",
+    "name": "宏國德霖科技大學",
+    "lat": 24.972675,
+    "lng": 121.458717,
+    "dist": 0
+  },
+  {
+    "id": "02",
+    "name": "清和里",
+    "lat": 24.974485,
+    "lng": 121.458671,
+    "dist": 201
+  },
+  {
+    "id": "03",
+    "name": "檳榔科",
+    "lat": 24.97779,
+    "lng": 121.45904,
+    "dist": 571
+  },
+  {
+    "id": "04",
+    "name": "清水派出所",
+    "lat": 24.979593,
+    "lng": 121.458976,
+    "dist": 771
+  },
+  {
+    "id": "05",
+    "name": "清水",
+    "lat": 24.982164,
+    "lng": 121.459083,
+    "dist": 1057
+  },
+  {
+    "id": "06",
+    "name": "臺灣新北地方法院(青雲)",
+    "lat": 24.985057,
+    "lng": 121.458862,
+    "dist": 1380
+  },
+  {
+    "id": "07",
+    "name": "土城看守所",
+    "lat": 24.988098,
+    "lng": 121.459762,
+    "dist": 1730
+  },
+  {
+    "id": "08",
+    "name": "廣福里",
+    "lat": 24.988332,
+    "lng": 121.457382,
+    "dist": 1971
+  },
+  {
+    "id": "09",
+    "name": "廣福國小",
+    "lat": 24.986745,
+    "lng": 121.454475,
+    "dist": 2313
+  },
+  {
+    "id": "10",
+    "name": "裕民路口(學府路)",
+    "lat": 24.984392,
+    "lng": 121.451599,
+    "dist": 2704
+  },
+  {
+    "id": "11",
+    "name": "新北高工(學府)",
+    "lat": 24.982999,
+    "lng": 121.450164,
+    "dist": 2916
+  },
+  {
+    "id": "12",
+    "name": "學士路口",
+    "lat": 24.981906,
+    "lng": 121.450256,
+    "dist": 3038
+  },
+  {
+    "id": "13",
+    "name": "裕民路口(金城路)",
+    "lat": 24.981193,
+    "lng": 121.453709,
+    "dist": 3394
+  },
+  {
+    "id": "14",
+    "name": "中正國中",
+    "lat": 24.982934,
+    "lng": 121.456626,
+    "dist": 3746
+  },
+  {
+    "id": "15",
+    "name": "臺灣新北地方法院(金城)",
+    "lat": 24.984634,
+    "lng": 121.459129,
+    "dist": 4062
+  },
+  {
+    "id": "16",
+    "name": "清水國小",
+    "lat": 24.985473,
+    "lng": 121.462252,
+    "dist": 4390
+  },
+  {
+    "id": "17",
+    "name": "永豐路口",
+    "lat": 24.986928,
+    "lng": 121.465873,
+    "highlight": true,
+    "dist": 4789
+  },
+  {
+    "id": "18",
+    "name": "平和里(燦坤金城店門口)",
+    "lat": 24.988256,
+    "lng": 121.46894,
+    "highlight": true,
+    "dist": 5132
+  },
+  {
+    "id": "19",
+    "name": "變電所",
+    "lat": 24.989439,
+    "lng": 121.470588,
+    "dist": 5344
+  },
+  {
+    "id": "20",
+    "name": "駕訓中心",
+    "lat": 24.992787,
+    "lng": 121.477607,
+    "dist": 6143
+  },
+  {
+    "id": "21",
+    "name": "中和高中",
+    "lat": 24.99422,
+    "lng": 121.47857,
+    "dist": 6330
+  },
+  {
+    "id": "22",
+    "name": "連城路",
+    "lat": 24.995565,
+    "lng": 121.482948,
+    "dist": 6796
+  },
+  {
+    "id": "23",
+    "name": "中正路",
+    "lat": 24.996332,
+    "lng": 121.48426,
+    "dist": 6953
+  },
+  {
+    "id": "24",
+    "name": "平河里",
+    "lat": 25.00061,
+    "lng": 121.48522,
+    "dist": 7438
+  },
+  {
+    "id": "25",
+    "name": "中原里",
+    "lat": 25.003105,
+    "lng": 121.484947,
+    "dist": 7717
+  },
+  {
+    "id": "26",
+    "name": "中山錦和路口",
+    "lat": 25.004781,
+    "lng": 121.486228,
+    "dist": 7944
+  },
+  {
+    "id": "27",
+    "name": "捷運橋和站",
+    "lat": 25.004682,
+    "lng": 121.490051,
+    "mrt": "環狀線",
+    "dist": 8329
+  },
+  {
+    "id": "28",
+    "name": "中和保養廠(COSTCO好市多正門)",
+    "lat": 25.002593,
+    "lng": 121.492357,
+    "highlight": true,
+    "dist": 8658
+  },
+  {
+    "id": "29",
+    "name": "家美工業區",
+    "lat": 25.002601,
+    "lng": 121.492904,
+    "dist": 8713
+  },
+  {
+    "id": "30",
+    "name": "捷運中和站(中山路)",
+    "lat": 25.00214,
+    "lng": 121.49524,
+    "mrt": "環狀線/萬大線",
+    "highlight": true,
+    "dist": 8954
+  },
+  {
+    "id": "31",
+    "name": "連城路口",
+    "lat": 25.00035,
+    "lng": 121.497444,
+    "dist": 9252
+  },
+  {
+    "id": "32",
+    "name": "中和區公所(景平路)",
+    "lat": 24.99832,
+    "lng": 121.49967,
+    "dist": 9570
+  },
+  {
+    "id": "33",
+    "name": "南華路口",
+    "lat": 24.995441,
+    "lng": 121.501373,
+    "dist": 9934
+  },
+  {
+    "id": "34",
+    "name": "捷運景安站(景平路)",
+    "lat": 24.993706,
+    "lng": 121.504652,
+    "mrt": "中和新蘆線/環狀線",
+    "dist": 10316
+  },
+  {
+    "id": "35",
+    "name": "中和教會",
+    "lat": 24.992753,
+    "lng": 121.509216,
+    "dist": 10788
+  },
+  {
+    "id": "36",
+    "name": "智光商職",
+    "lat": 24.995668,
+    "lng": 121.513999,
+    "dist": 11369
+  },
+  {
+    "id": "37",
+    "name": "中興二村",
+    "lat": 24.997034,
+    "lng": 121.515144,
+    "dist": 11560
+  },
+  {
+    "id": "38",
+    "name": "中興新村",
+    "lat": 24.998643,
+    "lng": 121.516609,
+    "dist": 11792
+  },
+  {
+    "id": "39",
+    "name": "得和路口",
+    "lat": 25.000928,
+    "lng": 121.517567,
+    "dist": 12064
+  },
+  {
+    "id": "40",
+    "name": "永和國小",
+    "lat": 25.003235,
+    "lng": 121.517296,
+    "dist": 12322
+  },
+  {
+    "id": "41",
+    "name": "福和里",
+    "lat": 25.006388,
+    "lng": 121.516991,
+    "dist": 12674
+  },
+  {
+    "id": "42",
+    "name": "大新街",
+    "lat": 25.00846,
+    "lng": 121.51694,
+    "dist": 12904
+  },
+  {
+    "id": "43",
+    "name": "正興里",
+    "lat": 25.010166,
+    "lng": 121.51551,
+    "dist": 13142
+  },
+  {
+    "id": "44",
+    "name": "捷運頂溪站",
+    "lat": 25.013897,
+    "lng": 121.515448,
+    "mrt": "中和新蘆線",
+    "dist": 13557
+  },
+  {
+    "id": "45",
+    "name": "中正橋頭",
+    "lat": 25.016157,
+    "lng": 121.516319,
+    "dist": 13823
+  },
+  {
+    "id": "46",
+    "name": "重慶南路三段(中正橋)",
+    "lat": 25.024258,
+    "lng": 121.516928,
+    "dist": 14726
+  },
+  {
+    "id": "47",
+    "name": "寧波重慶路口",
+    "lat": 25.028935,
+    "lng": 121.515394,
+    "dist": 15269
+  },
+  {
+    "id": "48",
+    "name": "中正二分局",
+    "lat": 25.032376,
+    "lng": 121.513986,
+    "dist": 15677
+  },
+  {
+    "id": "49",
+    "name": "一女中(重慶)",
+    "lat": 25.037551,
+    "lng": 121.512764,
+    "dist": 16265
+  },
+  {
+    "id": "50",
+    "name": "博愛路",
+    "lat": 25.04329,
+    "lng": 121.5116,
+    "dist": 16914
+  },
+  {
+    "id": "51",
+    "name": "臺北郵局",
+    "lat": 25.046664,
+    "lng": 121.511332,
+    "dist": 17290
+  },
+  {
+    "id": "52",
+    "name": "臺北車站(忠孝)",
+    "lat": 25.047383,
+    "lng": 121.51398,
+    "mrt": "台鐵/高鐵/板南/淡水信義",
+    "dist": 17569
+  },
+  {
+    "id": "53",
+    "name": "捷運善導寺站",
+    "lat": 25.04486,
+    "lng": 121.52242,
+    "mrt": "板南線",
+    "dist": 18464
+  },
+  {
+    "id": "54",
+    "name": "華山文創園區",
+    "lat": 25.04393,
+    "lng": 121.5275,
+    "dist": 18986
+  },
+  {
+    "id": "55",
+    "name": "忠孝國小",
+    "lat": 25.042934,
+    "lng": 121.531154,
+    "dist": 19371
+  },
+  {
+    "id": "56",
+    "name": "臺北科技大學(忠孝)",
+    "lat": 25.042238,
+    "lng": 121.534449,
+    "mrt": "板南線/中和新蘆線",
+    "dist": 19711
+  },
+  {
+    "id": "57",
+    "name": "正義郵局",
+    "lat": 25.041831,
+    "lng": 121.539213,
+    "dist": 20193
+  },
+  {
+    "id": "58",
+    "name": "懷生國中",
+    "lat": 25.041501,
+    "lng": 121.541076,
+    "dist": 20385
+  },
+  {
+    "id": "59",
+    "name": "頂好市場",
+    "lat": 25.041719,
+    "lng": 121.546586,
+    "dist": 20940
+  },
+  {
+    "id": "60",
+    "name": "捷運忠孝敦化站",
+    "lat": 25.041631,
+    "lng": 121.550156,
+    "mrt": "板南線",
+    "dist": 21300
+  },
+  {
+    "id": "61",
+    "name": "市民大道口",
+    "lat": 25.045906,
+    "lng": 121.549211,
+    "dist": 21785
+  },
+  {
+    "id": "62",
+    "name": "市立體育場",
+    "lat": 25.048992,
+    "lng": 121.54924,
+    "dist": 22128
+  },
+  {
+    "id": "63",
+    "name": "臺北小巨蛋",
+    "lat": 25.052646,
+    "lng": 121.54927,
+    "mrt": "松山新店線",
+    "dist": 22534
+  },
+  {
+    "id": "64",
+    "name": "長庚醫院",
+    "lat": 25.056743,
+    "lng": 121.549365,
+    "dist": 22990
+  },
+  {
+    "id": "65",
+    "name": "公教住宅",
+    "lat": 25.058158,
+    "lng": 121.552748,
+    "dist": 23365
+  },
+  {
+    "id": "66",
+    "name": "介壽國中",
+    "lat": 25.058446,
+    "lng": 121.55619,
+    "dist": 23714
+  },
+  {
+    "id": "67",
+    "name": "聯合二村",
+    "lat": 25.058469,
+    "lng": 121.559328,
+    "dist": 24030
+  },
+  {
+    "id": "68",
+    "name": "民生社區活動中心",
+    "lat": 25.058826,
+    "lng": 121.561164,
+    "highlight": true,
+    "dist": 24219
+  },
+  {
+    "id": "69",
+    "name": "新東街口",
+    "lat": 25.058971,
+    "lng": 121.566574,
+    "dist": 24764
+  },
+  {
+    "id": "70",
+    "name": "塔悠路",
+    "lat": 25.061016,
+    "lng": 121.56887,
+    "dist": 25088
+  },
+  {
+    "id": "71",
+    "name": "撫遠抽水站",
+    "lat": 25.062389,
+    "lng": 121.568634,
+    "dist": 25243
+  },
+  {
+    "id": "72",
+    "name": "塔悠疏散門",
+    "lat": 25.065017,
+    "lng": 121.568206,
+    "dist": 25538
+  }
+];
+    const maxDistance = stations[stations.length - 1].dist;
+    
+    let currentDirection = 0; // 0: 去程 (往民生社區), 1: 回程 (往德霖科大)
+    
+    let cameraMode = 'PIN_STATION'; 
+    let activeFollowBusId = null;
+    let pinnedStationId = "18"; // Default to 平和里 (燦坤金城店門口) so the user immediately sees it!
+
+    // ==========================================
+    // FLEET SETUP: 12 Active Buses (6 Go / 6 Back)
+    // ==========================================
+    // 雙端絕對時間同步引擎 (與手機 Scriptable 小工具 100% 毫秒級同步)
+    const cycle = 3600; // 60分鐘一圈循環
+    const numBuses = 6;
+    const effectiveSpeed = maxDistance / cycle; // 全程車平均移動速率 (m/s)
+    const goPlates = ["EAL-0126", "EAL-0152", "EAL-0122", "EAL-0151", "EAL-0138", "EAL-0150"];
+    const backPlates = ["EAL-0160", "EAL-0161", "EAL-0162", "EAL-0163", "EAL-0165", "EAL-0166"];
+
+    function computeDeterministicBuses() {
+      const now = Math.floor(Date.now() / 1000);
+      let list = [];
+
+      // 262 全程車 (德霖科大 ↔ 民生社區)
+      for (let i = 0; i < numBuses; i++) {
+        let offset = i * (cycle / numBuses);
+        let progGo = ((now + offset) % cycle) / cycle * maxDistance;
+        list.push({
+          id: goPlates[i],
+          plate: goPlates[i],
+          direction: 0,
+          busIndex: i,
+          routeLabel: '262',
+          progress: progGo,
+          speed: 38,
+          status: '營運中'
+        });
+
+        let backRatio = ((now + offset + 300) % cycle) / cycle;
+        let progBack = (1 - backRatio) * maxDistance;
+        list.push({
+          id: backPlates[i],
+          plate: backPlates[i],
+          direction: 1,
+          busIndex: i,
+          routeLabel: '262',
+          progress: progBack,
+          speed: 38,
+          status: '營運中'
+        });
+      }
+
+      return list;
+    }
+
+    let buses = computeDeterministicBuses();
+
+    // ==========================================
+    // 1. Google Maps & Tile Layers Initialization
+    // ==========================================
+    const mapLayers = {
+      google_road: L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['0', '1', '2', '3'],
+        attribution: 'Google Maps'
+      }),
+      google_sat: L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['0', '1', '2', '3'],
+        attribution: 'Google Maps'
+      }),
+      osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: 'OpenStreetMap'
+      })
+    };
+
+    const defaultStn = stations.find(s => s.id === pinnedStationId) || stations[17];
+    const map = L.map('map', {
+      center: [defaultStn.lat, defaultStn.lng],
+      zoom: 15,
+      zoomControl: true,
+      attributionControl: false,
+      layers: [mapLayers.google_road]
+    });
+
+    function changeMapLayer(layerKey) {
+      Object.values(mapLayers).forEach(layer => map.removeLayer(layer));
+      if (mapLayers[layerKey]) {
+        mapLayers[layerKey].addTo(map);
+      }
+    }
+
+    // When the user drags manually, release follow lock to free view
+    map.on('dragstart', () => {
+      if (cameraMode === 'FOLLOW_BUS') {
+        setCameraMode('FREE');
+      }
+    });
+
+    // Build Route Coordinates Polyline
+    const routeCoords = stations.map(s => [s.lat, s.lng]);
+
+    // Track Shadow / Glow on Google Maps
+    const trackGlow = L.polyline(routeCoords, {
+      color: '#FFFFFF',
+      weight: 8,
+      opacity: 0.9,
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map);
+
+    // Dynamic Route Line: Color adapts to current direction (Blue for Go, Red for Back)
+    const coreLine = L.polyline(routeCoords, {
+      color: '#0284C7',
+      weight: 5,
+      opacity: 0.95,
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map);
+
+    // ==========================================
+    // 2. Station Markers & Click to Pin
+    // ==========================================
+    const stationMarkers = {};
+
+    stations.forEach((stn, idx) => {
+      const isKey = stn.highlight || stn.mrt;
+      const markerSize = isKey ? 16 : 10;
+      
+      const customIcon = L.divIcon({
+        className: 'station-node-icon',
+        html: `<div id="map-dot-${stn.id}" style="
+          width: ${markerSize}px; 
+          height: ${markerSize}px; 
+          background: #FFFFFF; 
+          border: ${isKey ? '3.5px solid #0284C7' : '2.5px solid #0F172A'}; 
+          border-radius: 50%;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+          cursor: pointer;
+        " title="${stn.name}"></div>`,
+        iconSize: [markerSize, markerSize],
+        iconAnchor: [markerSize / 2, markerSize / 2]
+      });
+
+      const marker = L.marker([stn.lat, stn.lng], { icon: customIcon }).addTo(map);
+      
+      marker.on('click', () => {
+        pinToStation(stn.id);
+      });
+
+      stationMarkers[stn.id] = marker;
+    });
+
+    // Helper: Interpolate Lat/Lng from distance along route
+    function getCoordinateAtDistance(dist) {
+      if (dist <= 0) return [stations[0].lat, stations[0].lng];
+      if (dist >= maxDistance) return [stations[stations.length - 1].lat, stations[stations.length - 1].lng];
+
+      for (let i = 0; i < stations.length - 1; i++) {
+        const s1 = stations[i];
+        const s2 = stations[i + 1];
+        if (dist >= s1.dist && dist <= s2.dist) {
+          const ratio = (dist - s1.dist) / (s2.dist - s1.dist);
+          const lat = s1.lat + (s2.lat - s1.lat) * ratio;
+          const lng = s1.lng + (s2.lng - s1.lng) * ratio;
+          return [lat, lng];
+        }
+      }
+      return [stations[0].lat, stations[0].lng];
+    }
+
+    function getStationNearDistance(dist) {
+      let nearest = stations[0];
+      let minDiff = 999999;
+      for (let s of stations) {
+        let diff = Math.abs(s.dist - dist);
+        if (diff < minDiff) {
+          minDiff = diff;
+          nearest = s;
+        }
+      }
+      return nearest;
+    }
+
+    // ==========================================
+    // 3. Vehicle Markers (Blue for Go, Red for Back)
+    // ==========================================
+    const vehicleMarkers = {};
+
+    buses.forEach(bus => {
+      const coord = getCoordinateAtDistance(bus.progress);
+      
+      const icon = L.divIcon({
+        className: 'bus-custom-leaflet-icon',
+        html: createBusMarkerHtml(bus),
+        iconSize: [86, 46],
+        iconAnchor: [43, 23]
+      });
+
+      const marker = L.marker(coord, { icon: icon, zIndexOffset: 1000 }).addTo(map);
+      
+      marker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        followBus(bus.id);
+      });
+
+      vehicleMarkers[bus.id] = marker;
+    });
+
+    function createBusMarkerHtml(bus) {
+      const isGo = (bus.direction === 0);
+      const colorClass = isGo ? 'blue-go' : 'red-back';
+      const dirArrow = isGo ? '▶' : '◀';
+      const isSelected = (cameraMode === 'FOLLOW_BUS' && bus.id === activeFollowBusId);
+      
+      return `
+        <div class="bus-marker-container">
+          <div class="bus-marker-pill ${colorClass}" style="${isSelected ? 'transform:scale(1.2); box-shadow:0 0 16px #FFF;' : ''}">
+            <span style="font-size:9.5px; background:rgba(0,0,0,0.35); padding:1px 3px; border-radius:3px;">${bus.routeLabel}</span>
+            <span>${dirArrow} ${bus.plate}</span>
+            <span style="color:var(--accent-gold); font-size:9.5px;">${Math.round(bus.speed)}k</span>
+          </div>
+          <div class="bus-dot-beacon ${colorClass}"></div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 4. Viewport & Camera Control
+    // ==========================================
+    function setCameraMode(mode, targetId = null) {
+      cameraMode = mode;
+      
+      const followBtn = document.getElementById('followBtn');
+      const followBtnText = document.getElementById('followBtnText');
+      const followIndicator = document.getElementById('followIndicator');
+      const viewStatePill = document.getElementById('viewStatePill');
+      const viewStateIcon = document.getElementById('viewStateIcon');
+      const viewStateText = document.getElementById('viewStateText');
+      const viewStateResetBtn = document.getElementById('viewStateResetBtn');
+
+      followBtn.classList.remove('active-mode');
+      viewStateResetBtn.style.display = 'none';
+
+      document.querySelectorAll('.station-row').forEach(el => el.classList.remove('selected-pinned'));
+
+      if (mode === 'FREE') {
+        activeFollowBusId = null;
+        followBtnText.textContent = '隨機跟隨';
+        followIndicator.style.background = '#94A3B8';
+        viewStateIcon.textContent = '🕊️';
+        viewStateText.textContent = '自由瀏覽模式（點選車站可鎖定並顯示最近5班車）';
+      } 
+      else if (mode === 'FOLLOW_BUS') {
+        activeFollowBusId = targetId;
+        pinnedStationId = null;
+        followBtn.classList.add('active-mode');
+        followBtnText.textContent = '跟隨中: ' + targetId;
+        followIndicator.style.background = '#10B981';
+        viewStateIcon.textContent = '🚌';
+        viewStateText.textContent = `視角跟隨公車：${targetId}（平移地圖可隨時解除）`;
+        viewStateResetBtn.style.display = 'inline-block';
+      }
+      else if (mode === 'PIN_STATION') {
+        pinnedStationId = targetId;
+        activeFollowBusId = null;
+        followBtnText.textContent = '隨機跟隨';
+        followIndicator.style.background = '#94A3B8';
+        
+        const targetStn = stations.find(s => s.id === targetId);
+        const stnName = targetStn ? targetStn.name : '指定車站';
+
+        viewStateIcon.textContent = '🚏';
+        viewStateText.textContent = `數位看板鎖定中：${stnName}（最近5班車即時更新）`;
+        viewStateResetBtn.style.display = 'inline-block';
+
+        const drawerRow = document.getElementById('stn-row-' + targetId);
+        if (drawerRow) {
+          drawerRow.classList.add('selected-pinned');
+          drawerRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+
+      updateDigitalStationBoard();
+    }
+
+    function resetToFreeView() {
+      setCameraMode('FREE');
+    }
+
+    function followBus(busId) {
+      const bus = buses.find(b => b.id === busId);
+      if (!bus) return;
+      setCameraMode('FOLLOW_BUS', busId);
+      const coord = getCoordinateAtDistance(bus.progress);
+      map.setView(coord, 16, { animate: true });
+    }
+
+    function toggleFollowMode() {
+      if (cameraMode === 'FOLLOW_BUS') {
+        setCameraMode('FREE');
+      } else {
+        const available = buses.filter(b => b.direction === currentDirection);
+        if (available.length > 0) {
+          const randomBus = available[Math.floor(Math.random() * available.length)];
+          followBus(randomBus.id);
+        }
+      }
+    }
+
+    function pinToStation(stationId) {
+      const stn = stations.find(s => s.id === stationId);
+      if (!stn) return;
+
+      setCameraMode('PIN_STATION', stationId);
+      map.setView([stn.lat, stn.lng], 16, { animate: true });
+    }
+
+    function setDirection(dir) {
+      currentDirection = dir;
+      const isGo = (dir === 0);
+      
+      document.getElementById('dirGo').classList.toggle('active', isGo);
+      document.getElementById('dirBack').classList.toggle('active', !isGo);
+      
+      // Update core line color based on direction
+      coreLine.setStyle({ color: isGo ? '#0284C7' : '#E3002C' });
+
+      if (cameraMode === 'FOLLOW_BUS') {
+        const bus = buses.find(b => b.id === activeFollowBusId);
+        if (bus && bus.direction !== dir) {
+          setCameraMode('FREE');
+        }
+      }
+
+      renderStationList();
+      updateDigitalStationBoard();
+    }
+
+    function fitRouteBounds() {
+      setCameraMode('FREE');
+      map.fitBounds(coreLine.getBounds(), { padding: [60, 60] });
+    }
+
+    function toggleDrawer() {
+      const drawer = document.getElementById('stationsDrawer');
+      drawer.classList.toggle('collapsed');
+    }
+
+    // =========================================================================
+    // 5. DIGITAL BUS STOP LED BOARD (列出快要到該站的最近 5 班車與剩餘時間)
+    // =========================================================================
+    function updateDigitalStationBoard() {
+      const targetStn = stations.find(s => s.id === pinnedStationId) || stations[17];
+      const isGo = (currentDirection === 0);
+
+      document.getElementById('ledStationName').textContent = targetStn.name;
+      
+      const dirTag = document.getElementById('ledDirTag');
+      if (isGo) {
+        dirTag.textContent = '去程 · 往民生社區';
+        dirTag.style.background = 'var(--blue-go)';
+      } else {
+        dirTag.textContent = '回程 · 往德霖科大';
+        dirTag.style.background = 'var(--red-back)';
+      }
+
+      // Calculate all approaching buses in current direction towards this target station
+      let approachingList = [];
+
+      buses.forEach(b => {
+        if (b.direction === currentDirection) {
+          let metersAway = 0;
+          if (isGo) {
+            if (b.progress <= targetStn.dist) metersAway = targetStn.dist - b.progress;
+            else metersAway = (maxDistance - b.progress) + targetStn.dist;
+          } else {
+            if (b.progress >= targetStn.dist) metersAway = b.progress - targetStn.dist;
+            else metersAway = b.progress + (maxDistance - targetStn.dist);
+          }
+
+          const etaSecs = Math.round(metersAway / effectiveSpeed);
+          const nearStn = getStationNearDistance(b.progress);
+
+          approachingList.push({
+            bus: b,
+            metersAway: metersAway,
+            etaSecs: etaSecs,
+            nearStation: nearStn.name
+          });
+        }
+      });
+
+      // Sort by meters / time ascending
+      approachingList.sort((a, b) => a.metersAway - b.metersAway);
+
+      // Take TOP 5 BUSES
+      const top5 = approachingList.slice(0, 5);
+
+      const listContainer = document.getElementById('ledBusList');
+      listContainer.innerHTML = '';
+
+      const medals = ['①', '②', '③', '④', '⑤'];
+
+      top5.forEach((item, idx) => {
+        const b = item.bus;
+        const colorClass = isGo ? 'blue' : 'red';
+        
+        let etaDisplay = '';
+        if (item.etaSecs < 40) {
+          etaDisplay = '<span class="eta-approaching">● 進站中</span>';
+        } else if (item.etaSecs < 90) {
+          etaDisplay = '<span class="eta-soon">即將抵達</span>';
+        } else {
+          const mins = Math.ceil(item.etaSecs / 60);
+          etaDisplay = `<span class="eta-normal">約 ${mins} 分鐘</span>`;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'led-bus-row';
+        row.onclick = () => {
+          followBus(b.id);
+        };
+        row.style.cursor = 'pointer';
+        row.title = '點擊鏡頭鎖定跟隨此公車：' + b.plate;
+
+        row.innerHTML = `
+          <div class="led-bus-col-order">${medals[idx]}</div>
+          <div class="led-bus-col-plate">
+            <span class="badge-plate-sm ${colorClass}" style="display:inline-flex; align-items:center; gap:3px;">
+              <span style="font-size:9px; background:rgba(0,0,0,0.35); padding:0 3px; border-radius:2px;">${b.routeLabel}</span>
+              <span>${b.plate}</span>
+            </span>
+            <span style="font-size:10px; color:#94A3B8;">${Math.round(b.speed)}km/h</span>
+          </div>
+          <div class="led-bus-col-loc">${item.nearStation}</div>
+          <div class="led-bus-col-eta">${etaDisplay}</div>
+        `;
+
+        listContainer.appendChild(row);
+      });
+    }
+
+    // ==========================================
+    // 6. Render Stations in Drawer
+    // ==========================================
+    function renderStationList() {
+      const container = document.getElementById('stationListContainer');
+      container.innerHTML = '';
+
+      const listStns = currentDirection === 0 ? stations : [...stations].reverse();
+
+      listStns.forEach((stn, idx) => {
+        const row = document.createElement('div');
+        row.id = 'stn-row-' + stn.id;
+        row.className = 'station-row' + (stn.highlight ? ' highlight-stop' : '');
+        if (cameraMode === 'PIN_STATION' && pinnedStationId === stn.id) {
+          row.classList.add('selected-pinned');
+        }
+        
+        // Find nearest approaching bus in currentDirection
+        let nearestMeters = 999999;
+        let nearestBus = null;
+
+        buses.forEach(b => {
+          if (b.direction === currentDirection) {
+            let m = 0;
+            if (currentDirection === 0) {
+              m = (b.progress <= stn.dist) ? (stn.dist - b.progress) : ((maxDistance - b.progress) + stn.dist);
+            } else {
+              m = (b.progress >= stn.dist) ? (b.progress - stn.dist) : (b.progress + (maxDistance - stn.dist));
+            }
+
+            if (m < nearestMeters) {
+              nearestMeters = m;
+              nearestBus = b;
+            }
+          }
+        });
+
+        const etaSecs = Math.round(nearestMeters / effectiveSpeed);
+        let busBadge = '';
+        let etaText = '';
+
+        if (nearestMeters < 320) {
+          const badgeColor = (currentDirection === 0) ? 'var(--blue-go)' : 'var(--red-back)';
+          const label = nearestBus ? (nearestBus.routeLabel + ' ' + nearestBus.plate) : '';
+          busBadge = `<span class="bus-badge-here" style="background:${badgeColor}">${label} 進站</span>`;
+          etaText = '進站中';
+        } else if (etaSecs < 90) {
+          etaText = '即將到站';
+        } else {
+          etaText = '約 ' + Math.ceil(etaSecs / 60) + ' 分';
+        }
+
+        row.innerHTML = `
+          <div class="stn-left">
+            <span class="stn-num">${String(idx + 1).padStart(2, '0')}</span>
+            <div class="stn-node"></div>
+            <span class="stn-name">${stn.name} ${busBadge}</span>
+          </div>
+          <div class="stn-eta">${etaText}</div>
+        `;
+
+        row.onclick = () => {
+          pinToStation(stn.id);
+        };
+
+        container.appendChild(row);
+      });
+    }
+
+    // Modal Controls (放大後的公車圖)
+    function openBusModal() {
+      document.getElementById('busModal').classList.add('open');
+    }
+
+    function closeBusModal() {
+      document.getElementById('busModal').classList.remove('open');
+    }
+
+    function closeBusModalOnBackdrop(e) {
+      if (e.target.id === 'busModal') {
+        closeBusModal();
+      }
+    }
+
+    // ==========================================
+    // 7. Motion & Physics Animation Loop
+    // ==========================================
+    let lastTime = performance.now();
+    let boardUpdateTimer = 0;
+
+    function animate(currentTime) {
+      const dt = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+
+      const nowEpoch = Math.floor(Date.now() / 1000);
+      buses.forEach(bus => {
+        let offset = bus.busIndex * (cycle / numBuses);
+        if (bus.direction === 0) {
+          let progRatio = ((nowEpoch + offset) % cycle) / cycle;
+          bus.progress = progRatio * maxDistance;
+        } else {
+          let backRatio = ((nowEpoch + offset + 300) % cycle) / cycle;
+          bus.progress = (1 - backRatio) * maxDistance;
+        }
+
+        const coord = getCoordinateAtDistance(bus.progress);
+        const marker = vehicleMarkers[bus.id];
+        if (marker) {
+          marker.setLatLng(coord);
+          marker.setIcon(L.divIcon({
+            className: 'bus-custom-leaflet-icon',
+            html: createBusMarkerHtml(bus),
+            iconSize: [86, 46],
+            iconAnchor: [43, 23]
+          }));
+        }
+
+        if (cameraMode === 'FOLLOW_BUS' && bus.id === activeFollowBusId) {
+          map.panTo(coord, { animate: true, duration: 0.1 });
+        }
+      });
+
+      // Update Digital Board every ~0.5 seconds
+      boardUpdateTimer += dt;
+      if (boardUpdateTimer > 0.5) {
+        boardUpdateTimer = 0;
+        updateDigitalStationBoard();
+        renderStationList();
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Initialize
+    renderStationList();
+    updateDigitalStationBoard();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
