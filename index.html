@@ -2215,8 +2215,8 @@
     // 8. 交通部 TDX 官方原生直連引擎 (由本地 localStorage 提供)
     // =========================================================
     async function getTDXAccessToken() {
-      const clientId = localStorage.getItem('TDX_CLIENT_ID');
-      const clientSecret = localStorage.getItem('TDX_CLIENT_SECRET');
+      const clientId = localStorage.getItem('TDX_CLIENT_ID') || 'dazzling8380-3c880ff6-ef3a-41fc';
+      const clientSecret = localStorage.getItem('TDX_CLIENT_SECRET') || 'f6eb2d4b-17a1-48b1-b591-4dbc8e85af8b';
       if (!clientId || !clientSecret) return null;
 
       if (tdxToken && Date.now() < tdxTokenExpiry) {
@@ -2294,9 +2294,22 @@
     }
 
     function applyTDXData(rawList) {
+      const genuineBuses = [];
+      const seenPlates = new Set();
+
       rawList.forEach(item => {
         const plate = item.PlateNumb;
-        if (!plate) return;
+        if (!plate || seenPlates.has(plate)) return;
+
+        // 【極致關鍵過濾】：徹底剔除 262 區間車 (262區柴油車 xxx-U3/FY/FN)！
+        // 只保留正統 262 全程車 (德霖科大 ↔ 民生社區，配車為 EAL-01xx 純電低地板公車)
+        const subRoute = item.SubRouteName ? (item.SubRouteName.Zh_tw || '') : '';
+        const isShuttle = subRoute.includes('區') || plate.endsWith('-U3') || plate.endsWith('-FY') || plate.endsWith('-FN');
+        const isFullRoute = (subRoute === '262') || plate.startsWith('EAL-');
+
+        if (isShuttle || !isFullRoute) return;
+
+        seenPlates.add(plate);
 
         const lat = item.BusPosition ? item.BusPosition.PositionLat : null;
         const lng = item.BusPosition ? item.BusPosition.PositionLon : null;
@@ -2304,21 +2317,58 @@
         const speedKmh = item.Speed || 25;
         const speedMs = Math.max(4.0, (speedKmh * 1000) / 3600);
 
-        let projectedDist = (lat && lng) ? projectCoordToDistance(lat, lng) : null;
+        let projectedDist = (lat && lng) ? projectCoordToDistance(lat, lng) : 0;
 
-        // 配對或更新同方向的車輛
-        let targetBus = buses.find(b => b.plate === plate);
-        if (!targetBus && projectedDist !== null) {
-          targetBus = buses.find(b => b.direction === dir && !b.isCalibrated);
-          if (targetBus) targetBus.plate = plate;
-        }
-
-        if (targetBus && projectedDist !== null) {
-          targetBus.targetProgress = projectedDist;
-          targetBus.speed = speedMs;
-          targetBus.isCalibrated = true;
+        let existing = buses.find(b => b.id === plate);
+        if (existing) {
+          existing.targetProgress = projectedDist;
+          existing.speed = speedMs;
+          existing.direction = dir;
+          existing.isCalibrated = true;
+          genuineBuses.push(existing);
+        } else {
+          genuineBuses.push({
+            id: plate,
+            plate: plate,
+            direction: dir,
+            progress: projectedDist,
+            targetProgress: projectedDist,
+            speed: speedMs,
+            stationName: '行駛中',
+            isCalibrated: false
+          });
         }
       });
+
+      if (genuineBuses.length > 0) {
+        // 同步車隊為 100% 官方真實全程車
+        const newIds = new Set(genuineBuses.map(b => b.id));
+        Object.keys(vehicleMarkers).forEach(mId => {
+          if (!newIds.has(mId)) {
+            map.removeLayer(vehicleMarkers[mId]);
+            delete vehicleMarkers[mId];
+          }
+        });
+
+        genuineBuses.forEach(b => {
+          if (!vehicleMarkers[b.id]) {
+            const coord = getCoordinateAtDistance(b.progress);
+            const marker = L.marker(coord, {
+              icon: L.divIcon({
+                className: 'bus-custom-leaflet-icon',
+                html: createBusMarkerHtml(b),
+                iconSize: [84, 44],
+                iconAnchor: [42, 22]
+              })
+            }).addTo(map);
+            marker.on('click', () => map.setView(marker.getLatLng(), 16, { animate: true }));
+            vehicleMarkers[b.id] = marker;
+          }
+        });
+
+        buses.length = 0;
+        genuineBuses.forEach(b => buses.push(b));
+      }
     }
 
     function triggerManualRefresh() {
