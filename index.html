@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>262 公車即時動態智慧站牌 (真即時校正 · 連續平滑推算版)</title>
+  <title>262 公車即時動態智慧站牌</title>
   
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -78,7 +78,7 @@
       top: 10px;
       left: 10px;
       right: 98px;
-      max-width: 520px;
+      max-width: 560px;
       z-index: 1000;
       background: rgba(9, 13, 22, 0.92);
       backdrop-filter: blur(16px);
@@ -122,7 +122,7 @@
     }
     .brand-sub {
       font-size: 9.5px;
-      color: var(--accent-green);
+      color: var(--blue-glow);
       white-space: nowrap;
       display: flex;
       align-items: center;
@@ -133,7 +133,7 @@
     .top-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
     }
 
     .top-btn {
@@ -153,6 +153,65 @@
     }
     .top-btn:hover {
       background: #334155;
+    }
+
+    /* 填入TDX代號按鈕與懸浮提示視窗 (Tooltip) */
+    .tdx-btn-container {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .btn-tdx-key {
+      background: rgba(2, 132, 199, 0.25);
+      border: 1px solid var(--blue-glow);
+      color: #FFF;
+      font-weight: 700;
+    }
+    .btn-tdx-key:hover {
+      background: var(--blue-go);
+    }
+    .btn-tdx-key.active {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    .tdx-tooltip {
+      visibility: hidden;
+      position: absolute;
+      top: 135%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0F172A;
+      color: #F8FAFC;
+      padding: 6px 11px;
+      border-radius: 8px;
+      border: 1px solid var(--blue-glow);
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      z-index: 2000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+    }
+    .tdx-tooltip::before {
+      content: "";
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 5px;
+      border-style: solid;
+      border-color: transparent transparent var(--blue-glow) transparent;
+    }
+
+    .tdx-btn-container:hover .tdx-tooltip {
+      visibility: visible;
+      opacity: 1;
+      transform: translateX(-50%) translateY(2px);
     }
 
     .layer-select {
@@ -410,7 +469,7 @@
     }
 
     /* 彈出視窗 */
-    .station-modal-backdrop, .bus-modal-backdrop {
+    .station-modal-backdrop, .bus-modal-backdrop, .key-modal-backdrop {
       position: fixed;
       inset: 0;
       z-index: 2000;
@@ -422,11 +481,11 @@
       justify-content: center;
       padding: 14px;
     }
-    .station-modal-backdrop.open, .bus-modal-backdrop.open {
+    .station-modal-backdrop.open, .bus-modal-backdrop.open, .key-modal-backdrop.open {
       display: flex;
     }
 
-    .station-modal-box, .bus-modal-box {
+    .station-modal-box, .bus-modal-box, .key-modal-box {
       background: #0B0F19;
       border: 1px solid var(--border-subtle);
       border-radius: 16px;
@@ -546,9 +605,46 @@
       background: var(--blue-go);
       color: #FFF;
     }
+    .modal-btn-clear {
+      background: #7F1D1D;
+      color: #FECACA;
+    }
     .modal-btn-close {
       background: #1E293B;
       color: var(--text-main);
+    }
+
+    /* TDX Key Config Modal */
+    .key-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .key-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .key-input {
+      background: #1E293B;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #FFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      outline: none;
+    }
+    .key-input:focus {
+      border-color: var(--blue-glow);
+    }
+    .key-hint {
+      font-size: 10px;
+      color: var(--text-dim);
+      line-height: 1.45;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 8px;
+      border-radius: 6px;
     }
 
     /* 車種介紹 Modal */
@@ -580,7 +676,7 @@
       margin-top: 2px;
     }
 
-    /* Leaflet 自定義 Marker */
+    /* Leaflet 自定義 Marker：車頭朝對方向邊邊藍色或紅色 */
     .bus-marker-container {
       display: flex;
       flex-direction: column;
@@ -591,19 +687,30 @@
     .bus-marker-pill {
       display: inline-flex;
       align-items: center;
-      gap: 3px;
-      padding: 2px 6px;
+      gap: 4px;
+      padding: 2.5px 7px;
       border-radius: 12px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
+      font-size: 10.5px;
       font-weight: 800;
       color: #FFF;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
       white-space: nowrap;
+      transition: transform 0.15s;
     }
-    .bus-marker-pill.blue-go { background: var(--blue-go); }
-    .bus-marker-pill.red-back { background: var(--red-back); }
+    .bus-marker-pill:hover {
+      transform: scale(1.1);
+    }
+    /* 去程：藍色外框與發光，車頭向右 */
+    .bus-marker-pill.blue-go {
+      background: rgba(2, 132, 199, 0.92);
+      border: 2px solid var(--blue-glow);
+    }
+    /* 回程：紅色外框與發光，車頭向左 */
+    .bus-marker-pill.red-back {
+      background: rgba(225, 29, 72, 0.92);
+      border: 2px solid var(--red-glow);
+    }
 
     .bus-dot-beacon {
       width: 7px;
@@ -632,8 +739,18 @@
     </div>
 
     <div class="top-actions">
-      <button class="top-btn" onclick="triggerManualRefresh()" title="連線官方校正最新即時位置">
-        <span>🔄 校正</span>
+      <!-- 填入TDX代號按鈕 + 飄浮視窗提示 -->
+      <div class="tdx-btn-container">
+        <button class="top-btn btn-tdx-key" id="btnTdxKey" onclick="openKeyModal()">
+          <span>填入TDX代號</span>
+        </button>
+        <div class="tdx-tooltip" id="tdxTooltip">
+          💡 提示：填入代號可顯示真實公車車牌號碼
+        </div>
+      </div>
+
+      <button class="top-btn" onclick="triggerManualRefresh()" title="立即更新最新位置">
+        <span>🔄 刷新</span>
       </button>
 
       <button class="top-btn" id="btnOverview" onclick="fitRouteBounds()" title="全線概覽">
@@ -696,6 +813,44 @@
     </button>
   </div>
 
+  <!-- TDX 金鑰設定 Modal (安全儲存於本地瀏覽器 localStorage，絕不上傳 GitHub) -->
+  <div class="key-modal-backdrop" id="keyModal" onclick="closeKeyModalOnBackdrop(event)">
+    <div class="key-modal-box">
+      <div class="modal-head">
+        <div>
+          <div class="modal-head-title">
+            <span>🔑</span>
+            <span>交通部 TDX 官方代號設定</span>
+          </div>
+          <div class="modal-head-sub">儲存於您個人的本機瀏覽器，絕不會上傳或公開至 GitHub</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeKeyModal()">✕</button>
+      </div>
+
+      <div class="key-input-group">
+        <label class="key-label">TDX Client ID：</label>
+        <input class="key-input" id="tdxClientId" placeholder="填入您的 Client ID" />
+      </div>
+
+      <div class="key-input-group">
+        <label class="key-label">TDX Client Secret：</label>
+        <input class="key-input" id="tdxClientSecret" type="password" placeholder="填入您的 Client Secret" />
+      </div>
+
+      <div class="key-hint">
+        🔒 <b>隱私與安全保證：</b><br>
+        您填入的代號僅儲存於您目前設備的 <code>localStorage</code> 快取中，不會發送到 GitHub 倉庫代碼內，其他人無法看到您的金鑰。<br>
+        填入後即可解鎖<b>「真實車牌號碼（如 EAL-0129）」</b>；若未填入，系統將維持預設<b>「262 車號標籤與平滑方向動態」</b>，絕不顯示假車牌！
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-pin" onclick="saveTdxKeys()">💾 儲存並啟用真實車牌</button>
+        <button class="modal-btn modal-btn-clear" onclick="clearTdxKeys()">清除金鑰</button>
+        <button class="modal-btn modal-btn-close" onclick="closeKeyModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 站點詳情 Modal -->
   <div class="station-modal-backdrop" id="stationModal" onclick="closeStationModalOnBackdrop(event)">
     <div class="station-modal-box">
@@ -713,7 +868,7 @@
       <div class="stn-dir-card">
         <div class="stn-dir-title go">
           <span>🔵 順向 · 往民生社區 (去程)</span>
-          <span style="font-size:10px; font-weight:600; color:var(--text-muted);">即時推算</span>
+          <span style="font-size:10px; font-weight:600; color:var(--text-muted);">即時預估</span>
         </div>
         <div class="stn-bus-list" id="modalGoList"></div>
       </div>
@@ -721,7 +876,7 @@
       <div class="stn-dir-card">
         <div class="stn-dir-title back">
           <span>🔴 回程 · 往德霖科大 (返程)</span>
-          <span style="font-size:10px; font-weight:600; color:var(--text-muted);">即時推算</span>
+          <span style="font-size:10px; font-weight:600; color:var(--text-muted);">即時預估</span>
         </div>
         <div class="stn-bus-list" id="modalBackList"></div>
       </div>
@@ -1546,27 +1701,28 @@
 
     let selectedModalStationId = null;
 
-    // =========================================================
-    // 1. 車隊初始化：真實車牌與航位平滑推算核心 (Dead Reckoning)
-    // =========================================================
-    // 262 大都會客運四海站真實電巴車隊
-    const goPlates = ["EAL-0126", "EAL-0152", "EAL-0132", "EAL-0153", "EAL-0122", "EAL-0151"];
-    const backPlates = ["EAL-0160", "EAL-0161", "EAL-0162", "EAL-0163", "EAL-0165", "EAL-0166"];
+    // 是否已由使用者填入 TDX 金鑰 (預設不硬編碼在 GitHub 網頁上，保護隱私)
+    let isTdxEnabled = false;
+    let tdxToken = null;
+    let tdxTokenExpiry = 0;
 
+    // =========================================================
+    // 1. 公車車隊：取消所有虛構車牌！只顯示 262 車號與行駛方向
+    // =========================================================
+    // 雙向各 6 輛車，間距約 10 分鐘一班
     const cycleSeconds = 3600; // 單程約 60 分鐘
     const speedDefault = maxDistance / cycleSeconds; // 約 7.1 m/s (~25.5 km/h)
 
-    // 建立 12 輛常駐在線公車 (雙向各 6 輛，交錯發車，每 10-12 分鐘一班)
     const buses = [];
     const nowSec = Math.floor(Date.now() / 1000);
 
     // 去程車輛 (順向: 德霖 ➔ 民生社區)
-    goPlates.forEach((plate, i) => {
-      const offset = (cycleSeconds / goPlates.length) * i;
+    for (let i = 0; i < 6; i++) {
+      const offset = (cycleSeconds / 6) * i;
       const initialProg = ((nowSec + offset) % cycleSeconds) / cycleSeconds * maxDistance;
       buses.push({
-        id: plate,
-        plate: plate,
+        id: 'go_' + i,
+        plate: '', // 未開啟用真實車牌前為空，只顯示 262
         direction: 0,
         progress: initialProg,
         targetProgress: initialProg,
@@ -1574,15 +1730,15 @@
         stationName: '行駛中',
         isCalibrated: false
       });
-    });
+    }
 
     // 回程車輛 (返程: 民生社區 ➔ 德霖科大)
-    backPlates.forEach((plate, i) => {
-      const offset = (cycleSeconds / backPlates.length) * i + 300;
+    for (let i = 0; i < 6; i++) {
+      const offset = (cycleSeconds / 6) * i + 300;
       const initialProg = ((nowSec + offset) % cycleSeconds) / cycleSeconds * maxDistance;
       buses.push({
-        id: plate,
-        plate: plate,
+        id: 'back_' + i,
+        plate: '',
         direction: 1,
         progress: initialProg,
         targetProgress: initialProg,
@@ -1590,7 +1746,7 @@
         stationName: '行駛中',
         isCalibrated: false
       });
-    });
+    }
 
     // =========================================================
     // 2. Leaflet 地圖與圖層初始化
@@ -1644,9 +1800,7 @@
       lineJoin: 'round'
     }).addTo(map);
 
-    // =========================================================
-    // 3. 站牌 Marker 初始化
-    // =========================================================
+    // 站牌 Marker 初始化
     stations.forEach(stn => {
       const isKey = stn.highlight || (stn.id === '18') || (stn.id === '28');
       const markerSize = isKey ? 13 : 8.5;
@@ -1664,7 +1818,7 @@
     });
 
     // =========================================================
-    // 4. 車輛 Marker 初始化 (保證 12 輛車立刻出現在地圖上)
+    // 3. 車輛 Marker 初始化 (公車小圖 + 車頭方向 + 去程藍邊/回程紅邊)
     // =========================================================
     const vehicleMarkers = {};
 
@@ -1689,17 +1843,38 @@
     function createBusMarkerHtml(bus) {
       const isGo = (bus.direction === 0);
       const colorClass = isGo ? 'blue-go' : 'red-back';
-      const dirArrow = isGo ? '▶' : '◀';
+
+      // 核心要求：顯示公車小圖，車頭朝對方向，邊邊藍色或紅色代表去程或回程
+      // 去程向右：🚌 262 ▶
+      // 回程向左：◀ 262 🚌
+      // 若已解鎖真實車牌，則在括號內附上真實車牌
+      let labelText = isGo ? '🚌 262 ▶' : '◀ 262 🚌';
+      if (bus.plate && bus.plate.length > 0) {
+        labelText = isGo ? `🚌 ${bus.plate} ▶` : `◀ ${bus.plate} 🚌`;
+      }
 
       return `
         <div class="bus-marker-container">
           <div class="bus-marker-pill ${colorClass}">
-            <span style="font-size:8.5px; background:rgba(0,0,0,0.35); padding:1px 3px; border-radius:3px;">262</span>
-            <span>${dirArrow} ${bus.plate}</span>
+            <span>${labelText}</span>
           </div>
           <div class="bus-dot-beacon ${colorClass}"></div>
         </div>
       `;
+    }
+
+    function refreshAllMarkerIcons() {
+      buses.forEach(b => {
+        const marker = vehicleMarkers[b.id];
+        if (marker) {
+          marker.setIcon(L.divIcon({
+            className: 'bus-custom-leaflet-icon',
+            html: createBusMarkerHtml(b),
+            iconSize: [84, 44],
+            iconAnchor: [42, 22]
+          }));
+        }
+      });
     }
 
     // 沿著路線幾何折線計算任意公尺距離處的精準座標
@@ -1720,6 +1895,24 @@
       return [stations[0].lat, stations[0].lng];
     }
 
+    // 將 GPS 經緯度投影到路線折線上取得最近的路線距離 (公尺)
+    function projectCoordToDistance(lat, lng) {
+      let bestDist = 0;
+      let minGeoDist = 9999999;
+
+      for (let i = 0; i < stations.length; i++) {
+        let s = stations[i];
+        let dLat = s.lat - lat;
+        let dLng = s.lng - lng;
+        let geoDist = dLat * dLat + dLng * dLng;
+        if (geoDist < minGeoDist) {
+          minGeoDist = geoDist;
+          bestDist = s.dist;
+        }
+      }
+      return bestDist;
+    }
+
     function formatSecs(secs) {
       if (secs < 45) return '● 進站';
       if (secs < 90) return '即將到';
@@ -1733,7 +1926,7 @@
     }
 
     // =========================================================
-    // 5. 地圖右側站別直列條 (純站名 + 車輛藍/紅點，時間不顯示)
+    // 4. 地圖右側站別直列條 (純站名 + 車輛藍/紅點，時間不顯示)
     // =========================================================
     function initRightStationRail() {
       const railList = document.getElementById('railList');
@@ -1779,7 +1972,7 @@
     }
 
     // =========================================================
-    // 6. 底部黑框小工具更新 (雙欄梯隊：平和里 ➔ COSTCO)
+    // 5. 底部黑框小工具更新 (雙欄梯隊：顯示 262 車號或真車牌)
     // =========================================================
     function updateBottomWidget() {
       const d = new Date();
@@ -1804,10 +1997,12 @@
       goList.slice(0, 3).forEach((item, idx) => {
         const row = document.createElement('div');
         row.className = 'w-row';
+        // 核心要求：取消所有未經證實的假車牌，預設只顯示 262，若啟用 TDX 則顯示真車牌
+        const displayName = (item.bus.plate && item.bus.plate.length > 0) ? item.bus.plate : '262 本線';
         row.innerHTML = `
           <div class="w-row-left">
             <span class="w-row-num">${idx + 1}.</span>
-            <span class="w-row-plate">${item.bus.plate}</span>
+            <span class="w-row-plate">${displayName}</span>
           </div>
           <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
         `;
@@ -1830,10 +2025,11 @@
       backList.slice(0, 3).forEach((item, idx) => {
         const row = document.createElement('div');
         row.className = 'w-row';
+        const displayName = (item.bus.plate && item.bus.plate.length > 0) ? item.bus.plate : '262 本線';
         row.innerHTML = `
           <div class="w-row-left">
             <span class="w-row-num">${idx + 1}.</span>
-            <span class="w-row-plate">${item.bus.plate}</span>
+            <span class="w-row-plate">${displayName}</span>
           </div>
           <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
         `;
@@ -1842,7 +2038,7 @@
     }
 
     // =========================================================
-    // 7. 站點詳情 Modal
+    // 6. 站點詳情 Modal
     // =========================================================
     function openStationDetailModal(stnId) {
       selectedModalStationId = stnId;
@@ -1883,10 +2079,11 @@
       goBusesList.slice(0, 3).forEach((item, idx) => {
         const div = document.createElement('div');
         div.className = 'stn-bus-item';
+        const displayName = (item.bus.plate && item.bus.plate.length > 0) ? item.bus.plate : '262 本線';
         div.innerHTML = `
           <div>
             <span style="color:var(--blue-glow); margin-right:4px;">${medals[idx]}</span>
-            <span class="stn-bus-plate">${item.bus.plate}</span>
+            <span class="stn-bus-plate">${displayName}</span>
             <span class="stn-bus-loc">（在 ${item.loc}）</span>
           </div>
           <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
@@ -1910,10 +2107,11 @@
       backBusesList.slice(0, 3).forEach((item, idx) => {
         const div = document.createElement('div');
         div.className = 'stn-bus-item';
+        const displayName = (item.bus.plate && item.bus.plate.length > 0) ? item.bus.plate : '262 本線';
         div.innerHTML = `
           <div>
             <span style="color:var(--red-glow); margin-right:4px;">${medals[idx]}</span>
-            <span class="stn-bus-plate">${item.bus.plate}</span>
+            <span class="stn-bus-plate">${displayName}</span>
             <span class="stn-bus-loc">（在 ${item.loc}）</span>
           </div>
           <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
@@ -1947,93 +2145,185 @@
       if (e.target.id === 'busModal') closeBusModal();
     }
 
+    // =========================================================
+    // 7. TDX 金鑰彈窗與本機安全儲存 (不寫入 GitHub 檔案中)
+    // =========================================================
+    function updateKeyButtonUI() {
+      const btn = document.getElementById('btnTdxKey');
+      const tooltip = document.getElementById('tdxTooltip');
+      const savedId = localStorage.getItem('TDX_CLIENT_ID');
+      const savedSecret = localStorage.getItem('TDX_CLIENT_SECRET');
+
+      if (savedId && savedSecret) {
+        isTdxEnabled = true;
+        btn.classList.add('active');
+        btn.innerHTML = '<span>✅ TDX已啟用</span>';
+        tooltip.innerHTML = '💡 已啟用交通部官方直連（顯示真車牌），點擊可修改或清除金鑰';
+      } else {
+        isTdxEnabled = false;
+        btn.classList.remove('active');
+        btn.innerHTML = '<span>填入TDX代號</span>';
+        tooltip.innerHTML = '💡 提示：填入代號可顯示真實公車車牌號碼';
+      }
+    }
+
+    function openKeyModal() {
+      document.getElementById('tdxClientId').value = localStorage.getItem('TDX_CLIENT_ID') || '';
+      document.getElementById('tdxClientSecret').value = localStorage.getItem('TDX_CLIENT_SECRET') || '';
+      document.getElementById('keyModal').classList.add('open');
+    }
+    function closeKeyModal() {
+      document.getElementById('keyModal').classList.remove('open');
+    }
+    function closeKeyModalOnBackdrop(e) {
+      if (e.target.id === 'keyModal') closeKeyModal();
+    }
+
+    function saveTdxKeys() {
+      const id = document.getElementById('tdxClientId').value.trim();
+      const secret = document.getElementById('tdxClientSecret').value.trim();
+      if (id && secret) {
+        localStorage.setItem('TDX_CLIENT_ID', id);
+        localStorage.setItem('TDX_CLIENT_SECRET', secret);
+        tdxToken = null;
+        updateKeyButtonUI();
+        closeKeyModal();
+        fetchLiveRealTime();
+      } else {
+        alert('請完整填寫 Client ID 與 Client Secret');
+      }
+    }
+
+    function clearTdxKeys() {
+      localStorage.removeItem('TDX_CLIENT_ID');
+      localStorage.removeItem('TDX_CLIENT_SECRET');
+      tdxToken = null;
+      // 清空所有車輛車牌，回歸 262 車號標籤
+      buses.forEach(b => b.plate = '');
+      refreshAllMarkerIcons();
+      updateKeyButtonUI();
+      closeKeyModal();
+      document.getElementById('liveStatusText').innerHTML = '🟢 航位連續平滑推算中';
+      document.getElementById('liveStatusText').style.color = 'var(--blue-glow)';
+    }
+
     function fitRouteBounds() {
       map.fitBounds(coreLine.getBounds(), { padding: [50, 50] });
     }
 
     // =========================================================
-    // 8. 官方即時連線校正引擎 (Live Real-Time Calibration)
+    // 8. 交通部 TDX 官方原生直連引擎 (由本地 localStorage 提供)
     // =========================================================
-    async function fetchWithProxy(targetUrl) {
-      const proxies = [
-        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
-      ];
+    async function getTDXAccessToken() {
+      const clientId = localStorage.getItem('TDX_CLIENT_ID');
+      const clientSecret = localStorage.getItem('TDX_CLIENT_SECRET');
+      if (!clientId || !clientSecret) return null;
 
-      for (let p of proxies) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4000);
-          const res = await fetch(p, { signal: controller.signal });
-          clearTimeout(timeoutId);
-          if (res.ok) {
-            const text = await res.text();
-            if (text && text.length > 500) return text;
-          }
-        } catch (e) {}
+      if (tdxToken && Date.now() < tdxTokenExpiry) {
+        return tdxToken;
+      }
+
+      try {
+        const tokenUrl = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token';
+        const params = new URLSearchParams();
+        params.append('grant_type', 'client_credentials');
+        params.append('client_id', clientId);
+        params.append('client_secret', clientSecret);
+
+        const res = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          tdxToken = data.access_token;
+          tdxTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+          return tdxToken;
+        }
+      } catch (e) {
+        console.warn('TDX token fetch error:', e);
       }
       return null;
     }
 
-    async function fetchLiveRealTime() {
-      const goUrl = 'https://ebus.gov.taipei/EBus/VsSimpleMap?rid=10961&sec=0';
-      const backUrl = 'https://ebus.gov.taipei/EBus/VsSimpleMap?rid=10961&sec=1';
+    async function fetchTDXLiveBuses(token) {
+      const urls = [
+        'https://tdx.transportdata.tw/api/basic/v2/Bus/RealTimeByFrequency/City/NewTaipei/262?$format=JSON',
+        'https://tdx.transportdata.tw/api/basic/v2/Bus/RealTimeByFrequency/City/Taipei/262?$format=JSON'
+      ];
 
-      try {
-        const [goHtml, backHtml] = await Promise.all([
-          fetchWithProxy(goUrl),
-          fetchWithProxy(backUrl)
-        ]);
-
-        let calibratedCount = 0;
-
-        function applyHtmlData(html, dir) {
-          if (!html) return;
-          stations.forEach(stn => {
-            const p = html.indexOf(stn.name);
-            if (p !== -1) {
-              const chunk = html.substring(p, p + 140).replace(/<[^>]+>/g, ' ');
-              const plateMatch = chunk.match(/([A-Z0-9]{2,4}-[A-Z0-9]{3,4})/i);
-              if (plateMatch) {
-                const plate = plateMatch[1].toUpperCase();
-                // 尋找車隊中對應的車輛進行錨點校正
-                let b = buses.find(x => x.plate === plate);
-                if (!b) {
-                  // 若為新動態車輛，更新最接近的一輛
-                  b = buses.find(x => x.direction === dir && !x.isCalibrated);
-                  if (b) b.plate = plate;
-                }
-                if (b) {
-                  b.targetProgress = stn.dist;
-                  b.stationName = stn.name;
-                  b.isCalibrated = true;
-                  calibratedCount++;
-                }
-              }
-            }
+      let rawBuses = [];
+      for (let u of urls) {
+        try {
+          const res = await fetch(u, {
+            headers: { 'Authorization': `Bearer ${token}` }
           });
-        }
-
-        if (goHtml) applyHtmlData(goHtml, 0);
-        if (backHtml) applyHtmlData(backHtml, 1);
-
-        const statusEl = document.getElementById('liveStatusText');
-        if (calibratedCount > 0) {
-          statusEl.innerHTML = `🟢 官方即時校正中 (線上 ${calibratedCount} 輛)`;
-          statusEl.style.color = 'var(--accent-green)';
-        } else {
-          statusEl.innerHTML = '🟢 航位連續平滑推算中';
-          statusEl.style.color = 'var(--blue-glow)';
-        }
-      } catch (err) {
-        console.warn('Real-time sync delay, maintaining smooth dead reckoning:', err);
+          if (res.ok) {
+            const list = await res.json();
+            if (Array.isArray(list)) rawBuses.push(...list);
+          }
+        } catch (e) {}
       }
+      return rawBuses;
+    }
+
+    async function fetchLiveRealTime() {
+      const statusEl = document.getElementById('liveStatusText');
+      
+      const token = await getTDXAccessToken();
+      if (token) {
+        try {
+          const rawBuses = await fetchTDXLiveBuses(token);
+          if (rawBuses && rawBuses.length > 0) {
+            applyTDXData(rawBuses);
+            statusEl.innerHTML = `🟢 官方車機即時校正 (線上 ${rawBuses.length} 輛真車)`;
+            statusEl.style.color = 'var(--accent-green)';
+            refreshAllMarkerIcons();
+            return;
+          }
+        } catch (err) {
+          console.warn('TDX query failed:', err);
+        }
+      }
+
+      // 未設定 TDX 或連線中，保持 262 平滑航位推算，絕不顯示假車牌
+      statusEl.innerHTML = '🟢 航位連續平滑推算中';
+      statusEl.style.color = 'var(--blue-glow)';
+    }
+
+    function applyTDXData(rawList) {
+      rawList.forEach(item => {
+        const plate = item.PlateNumb;
+        if (!plate) return;
+
+        const lat = item.BusPosition ? item.BusPosition.PositionLat : null;
+        const lng = item.BusPosition ? item.BusPosition.PositionLon : null;
+        const dir = (item.Direction === 1) ? 1 : 0;
+        const speedKmh = item.Speed || 25;
+        const speedMs = Math.max(4.0, (speedKmh * 1000) / 3600);
+
+        let projectedDist = (lat && lng) ? projectCoordToDistance(lat, lng) : null;
+
+        // 配對或更新同方向的車輛
+        let targetBus = buses.find(b => b.plate === plate);
+        if (!targetBus && projectedDist !== null) {
+          targetBus = buses.find(b => b.direction === dir && !b.isCalibrated);
+          if (targetBus) targetBus.plate = plate;
+        }
+
+        if (targetBus && projectedDist !== null) {
+          targetBus.targetProgress = projectedDist;
+          targetBus.speed = speedMs;
+          targetBus.isCalibrated = true;
+        }
+      });
     }
 
     function triggerManualRefresh() {
       const statusEl = document.getElementById('liveStatusText');
-      statusEl.innerHTML = '🔄 正在連線官方校正...';
+      statusEl.innerHTML = '🔄 正在更新最新位置...';
       fetchLiveRealTime();
     }
 
@@ -2045,7 +2335,7 @@
     function animate(currentTime) {
       let dt = (currentTime - lastTime) / 1000.0;
       lastTime = currentTime;
-      if (dt > 0.1) dt = 0.1; // 防止背景標籤切換造成位置瞬跳
+      if (dt > 0.1) dt = 0.1;
 
       buses.forEach(b => {
         // 平滑過渡至目標錨點 (Tweening Interpolation)
@@ -2055,7 +2345,7 @@
             b.progress += diff * Math.min(1.0, dt * 2.5);
           } else {
             b.progress = b.targetProgress;
-            b.isCalibrated = false; // 校正完成，繼續自主前進
+            b.isCalibrated = false;
           }
         }
 
@@ -2100,16 +2390,16 @@
     }
 
     // 初始化啟動
+    updateKeyButtonUI();
     initRightStationRail();
     updateBottomWidget();
     fitRouteBounds();
 
-    // 啟動動畫引擎
     requestAnimationFrame(animate);
 
-    // 啟動後台定期連線校正 (每 20 秒自動連線一次)
+    // 啟動連線檢查 (每 15 秒更新一次)
     fetchLiveRealTime();
-    setInterval(fetchLiveRealTime, 20000);
+    setInterval(fetchLiveRealTime, 15000);
   </script>
 </body>
 </html>
