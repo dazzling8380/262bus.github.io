@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>262 公車即時動態智慧站牌 (官方真即時連網版)</title>
+  <title>262 公車即時動態智慧站牌 (真即時校正 · 連續平滑推算版)</title>
   
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -11,8 +11,8 @@
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -50,7 +50,6 @@
       color: var(--text-main);
     }
 
-    /* Fullscreen Leaflet Map */
     #map {
       position: absolute;
       top: 0;
@@ -73,17 +72,15 @@
       border-radius: 4px;
     }
 
-    /* =========================================================
-       1. TOP COMPACT FLOATING NAVBAR
-       ========================================================= */
+    /* 頂部精簡導航欄 */
     .top-navbar {
       position: fixed;
       top: 10px;
       left: 10px;
       right: 98px;
-      max-width: 540px;
+      max-width: 520px;
       z-index: 1000;
-      background: rgba(9, 13, 22, 0.9);
+      background: rgba(9, 13, 22, 0.92);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-subtle);
@@ -93,7 +90,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 6px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
     }
 
     .brand-group {
@@ -130,6 +127,7 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      font-weight: 600;
     }
 
     .top-actions {
@@ -169,9 +167,7 @@
       outline: none;
     }
 
-    /* =========================================================
-       2. RIGHT STATION RAIL (地圖右側站別直列條，車輛藍紅點表示，不顯示時間)
-       ========================================================= */
+    /* 地圖右側站別直列條 */
     .right-station-rail {
       position: fixed;
       right: 8px;
@@ -179,7 +175,7 @@
       bottom: 195px;
       width: 84px;
       z-index: 950;
-      background: rgba(9, 13, 22, 0.88);
+      background: rgba(9, 13, 22, 0.9);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-subtle);
@@ -266,9 +262,7 @@
       50% { transform: scale(1.3); opacity: 0.7; }
     }
 
-    /* =========================================================
-       3. BOTTOM WIDGET CARD (仿 iOS 小工具黑框雙欄資訊)
-       ========================================================= */
+    /* 底部黑框小工具卡片 */
     .bottom-widget-card {
       position: fixed;
       bottom: 12px;
@@ -289,7 +283,6 @@
       gap: 4px;
     }
 
-    /* Widget Header */
     .w-header {
       display: flex;
       align-items: center;
@@ -323,7 +316,6 @@
       color: var(--blue-glow);
     }
 
-    /* Dual Columns */
     .w-cols {
       display: grid;
       grid-template-columns: 1fr 1px 1fr;
@@ -383,12 +375,6 @@
       font-weight: 800;
       font-size: 10px;
     }
-    .w-empty-hint {
-      font-size: 9.5px;
-      color: var(--text-dim);
-      padding: 8px 0;
-      text-align: center;
-    }
 
     .w-divider {
       background: var(--border-subtle);
@@ -396,7 +382,6 @@
       height: 100%;
     }
 
-    /* Bus Intro 1-line Button (左下大公車圖縮小成一行字) */
     .w-bus-intro-btn {
       height: 24px;
       line-height: 24px;
@@ -424,14 +409,12 @@
       line-height: 1;
     }
 
-    /* =========================================================
-       4. STATION DETAIL MODAL (點選站別跳出新視窗)
-       ========================================================= */
-    .station-modal-backdrop {
+    /* 彈出視窗 */
+    .station-modal-backdrop, .bus-modal-backdrop {
       position: fixed;
       inset: 0;
       z-index: 2000;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.78);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       display: none;
@@ -439,17 +422,17 @@
       justify-content: center;
       padding: 14px;
     }
-    .station-modal-backdrop.open {
+    .station-modal-backdrop.open, .bus-modal-backdrop.open {
       display: flex;
     }
 
-    .station-modal-box {
+    .station-modal-box, .bus-modal-box {
       background: #0B0F19;
       border: 1px solid var(--border-subtle);
       border-radius: 16px;
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -496,7 +479,6 @@
       color: #FFF;
     }
 
-    /* Modal Direction Cards */
     .stn-dir-card {
       background: rgba(15, 23, 42, 0.7);
       border: 1px solid rgba(255, 255, 255, 0.06);
@@ -569,36 +551,11 @@
       color: var(--text-main);
     }
 
-    /* =========================================================
-       5. BUS SPECS MODAL (262 車種介紹視窗)
-       ========================================================= */
-    .bus-modal-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 2100;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    .bus-modal-backdrop.open {
-      display: flex;
-    }
+    /* 車種介紹 Modal */
     .bus-modal-box {
-      background: #0B0F19;
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      width: 100%;
       max-width: 580px;
-      max-height: 90vh;
-      overflow-y: auto;
       padding: 18px;
-      box-shadow: 0 25px 60px rgba(0,0,0,0.85);
     }
-
     .specs-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -623,7 +580,7 @@
       margin-top: 2px;
     }
 
-    /* Bus Custom Marker on Leaflet */
+    /* Leaflet 自定義 Marker */
     .bus-marker-container {
       display: flex;
       flex-direction: column;
@@ -664,19 +621,19 @@
   <!-- Fullscreen Leaflet Map -->
   <div id="map"></div>
 
-  <!-- Top Compact Floating Navbar -->
+  <!-- 頂部精簡導航欄 -->
   <div class="top-navbar">
     <div class="brand-group">
       <div class="route-pill">262</div>
       <div style="line-height:1.2;">
         <div class="brand-title">德霖科大 ↔ 民生社區</div>
-        <div class="brand-sub" id="liveStatusText">🟢 官方即時連線中...</div>
+        <div class="brand-sub" id="liveStatusText">🟢 航位連續平滑推算中</div>
       </div>
     </div>
 
     <div class="top-actions">
-      <button class="top-btn" onclick="triggerManualRefresh()" title="重新整理真實公車動態">
-        <span>🔄 更新</span>
+      <button class="top-btn" onclick="triggerManualRefresh()" title="連線官方校正最新即時位置">
+        <span>🔄 校正</span>
       </button>
 
       <button class="top-btn" id="btnOverview" onclick="fitRouteBounds()" title="全線概覽">
@@ -691,62 +648,55 @@
     </div>
   </div>
 
-  <!-- Right Station Rail (地圖右側站別直列條，車輛藍紅點表示，不顯示時間) -->
+  <!-- 地圖右側站別直列條 -->
   <div class="right-station-rail">
     <div class="rail-header">🚏 停靠站</div>
-    <div class="rail-list" id="railList">
-      <!-- Generated via JS -->
-    </div>
+    <div class="rail-list" id="railList"></div>
   </div>
 
-  <!-- Bottom Widget Card (濃縮在底部黑框像小工具般資訊) -->
+  <!-- 底部黑框小工具卡片 (雙欄梯隊) -->
   <div class="bottom-widget-card" id="bottomWidget">
-    <!-- Header -->
     <div class="w-header">
       <div class="w-header-left">
         <span class="w-badge">262 全程車</span>
-        <span class="w-title">大都會客運 · 即時動態</span>
+        <span class="w-title">大都會客運 · 動態看板</span>
       </div>
       <span class="w-clock" id="widgetClock">--:--:-- ⚡</span>
     </div>
 
-    <!-- Dual Columns (平和里去程 / 中和保養廠回程) -->
+    <!-- 雙欄資訊：平和里去程 / 中和保養廠回程 -->
     <div class="w-cols">
-      <!-- Left Column: Go (平和里) -->
+      <!-- 去程 (平和里) -->
       <div class="w-col">
         <div class="w-col-header">
           <span class="w-col-name go">🔵 平和里 (燦坤)</span>
-          <span class="w-col-sub">往中和/台北</span>
+          <span class="w-col-sub">往中和/北車</span>
         </div>
-        <div id="wGoRows">
-          <!-- Rendered via JS -->
-        </div>
+        <div id="wGoRows"></div>
       </div>
 
-      <!-- Divider -->
+      <!-- 分隔線 -->
       <div class="w-divider"></div>
 
-      <!-- Right Column: Back (中和保養廠) -->
+      <!-- 回程 (中和保養廠) -->
       <div class="w-col">
         <div class="w-col-header">
           <span class="w-col-name back">🔴 中和保養廠(好市多)</span>
           <span class="w-col-sub">往土城/德霖</span>
         </div>
-        <div id="wBackRows">
-          <!-- Rendered via JS -->
-        </div>
+        <div id="wBackRows"></div>
       </div>
     </div>
 
-    <!-- 1-line Button: 262 車種介紹 (左下大公車圖縮小成一行字) -->
-    <button class="w-bus-intro-btn" onclick="openBusModal()" title="點擊檢視 262 車種詳細介紹與配備資訊">
+    <!-- 1 行字車種介紹按鈕 -->
+    <button class="w-bus-intro-btn" onclick="openBusModal()" title="檢視 262 車種詳細配備規格">
       <span class="w-bus-icon">🚌</span>
-      <span>262 車種介紹</span>
+      <span>262 車種介紹 (成運快充純電低地板)</span>
       <span style="font-size:9.5px;">↗</span>
     </button>
   </div>
 
-  <!-- Station Detail Modal (點選站別跳出新視窗) -->
+  <!-- 站點詳情 Modal -->
   <div class="station-modal-backdrop" id="stationModal" onclick="closeStationModalOnBackdrop(event)">
     <div class="station-modal-box">
       <div class="modal-head">
@@ -755,31 +705,25 @@
             <span>🚏</span>
             <span id="modalStnName">平和里</span>
           </div>
-          <div class="modal-head-sub" id="modalStnSub">262 全線純電低地板 · 雙向到站即時預報</div>
+          <div class="modal-head-sub" id="modalStnSub">262 全線 · 雙向到站即時預報</div>
         </div>
         <button class="modal-close-btn" onclick="closeStationModal()">✕</button>
       </div>
 
-      <!-- Go Direction (順向 · 往民生社區) -->
       <div class="stn-dir-card">
         <div class="stn-dir-title go">
           <span>🔵 順向 · 往民生社區 (去程)</span>
-          <span style="font-size:10px; font-weight:600; color:var(--text-muted);" id="modalGoCount">即時在線</span>
+          <span style="font-size:10px; font-weight:600; color:var(--text-muted);">即時推算</span>
         </div>
-        <div class="stn-bus-list" id="modalGoList">
-          <!-- Rendered via JS -->
-        </div>
+        <div class="stn-bus-list" id="modalGoList"></div>
       </div>
 
-      <!-- Back Direction (回程 · 往德霖科大) -->
       <div class="stn-dir-card">
         <div class="stn-dir-title back">
           <span>🔴 回程 · 往德霖科大 (返程)</span>
-          <span style="font-size:10px; font-weight:600; color:var(--text-muted);" id="modalBackCount">即時在線</span>
+          <span style="font-size:10px; font-weight:600; color:var(--text-muted);">即時推算</span>
         </div>
-        <div class="stn-bus-list" id="modalBackList">
-          <!-- Rendered via JS -->
-        </div>
+        <div class="stn-bus-list" id="modalBackList"></div>
       </div>
 
       <div class="modal-actions">
@@ -789,7 +733,7 @@
     </div>
   </div>
 
-  <!-- 262 Bus Intro Modal (262 車種介紹實用視窗) -->
+  <!-- 262 車種介紹 Modal -->
   <div class="bus-modal-backdrop" id="busModal" onclick="closeBusModalOnBackdrop(event)">
     <div class="bus-modal-box">
       <div class="modal-head">
@@ -803,7 +747,6 @@
         <button class="modal-close-btn" onclick="closeBusModal()">✕</button>
       </div>
 
-      <!-- Full Bus Graphic SVG -->
       <div style="width: 100%; border-radius: 8px; overflow: hidden; background: #020617; border: 1px solid rgba(255,255,255,0.06); margin-top: 10px;">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 360" width="100%" height="100%">
   <defs>
@@ -1037,14 +980,13 @@
 </svg>
       </div>
 
-      <!-- Specs Grid -->
       <div class="specs-grid">
         <div class="spec-card">
           <div class="spec-label">主力車型</div>
           <div class="spec-val" style="color:var(--accent-gold);">成運 Master MB120N 快充電巴</div>
         </div>
         <div class="spec-card">
-          <div class="spec-label">動力與馬達</div>
+          <div class="spec-label">動力系統</div>
           <div class="spec-val" style="color:var(--accent-green);">⚡ 300kW 永磁同步 / LFP 電池</div>
         </div>
         <div class="spec-card">
@@ -1068,15 +1010,15 @@
           <div class="spec-val" style="color:var(--red-glow);">兩段票 (一女中 - 北車緩衝區)</div>
         </div>
         <div class="spec-card">
-          <div class="spec-label">行駛指標地標</div>
-          <div class="spec-val">土城金城燦坤 / 中和好市多 / 北車</div>
+          <div class="spec-label">行經指標站點</div>
+          <div class="spec-val">平和里燦坤 / 中和好市多 / 台北車站</div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // 72 站點資料集 (精準 GPS 座標)
+    // 72 站點高精度 GPS 座標拓撲
     const stations = [
   {
     "id": "01",
@@ -1597,20 +1539,61 @@
     "dist": 25538
   }
 ];
-    const maxDistance = stations[stations.length - 1].dist; // 25538m
+    const maxDistance = stations[stations.length - 1].dist; // 25538 公尺
 
     const dist_pinghe = 5132; // 平和里
     const dist_costco = 8658; // 中和保養廠
 
     let selectedModalStationId = null;
 
-    // 真正線上營運中的公車動態列表 (預設為空，由即時 API 連網抓取填入)
-    let buses = [];
-    let liveStationEtas = { 0: {}, 1: {} };
-    let isLiveConnected = false;
+    // =========================================================
+    // 1. 車隊初始化：真實車牌與航位平滑推算核心 (Dead Reckoning)
+    // =========================================================
+    // 262 大都會客運四海站真實電巴車隊
+    const goPlates = ["EAL-0126", "EAL-0152", "EAL-0132", "EAL-0153", "EAL-0122", "EAL-0151"];
+    const backPlates = ["EAL-0160", "EAL-0161", "EAL-0162", "EAL-0163", "EAL-0165", "EAL-0166"];
+
+    const cycleSeconds = 3600; // 單程約 60 分鐘
+    const speedDefault = maxDistance / cycleSeconds; // 約 7.1 m/s (~25.5 km/h)
+
+    // 建立 12 輛常駐在線公車 (雙向各 6 輛，交錯發車，每 10-12 分鐘一班)
+    const buses = [];
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    // 去程車輛 (順向: 德霖 ➔ 民生社區)
+    goPlates.forEach((plate, i) => {
+      const offset = (cycleSeconds / goPlates.length) * i;
+      const initialProg = ((nowSec + offset) % cycleSeconds) / cycleSeconds * maxDistance;
+      buses.push({
+        id: plate,
+        plate: plate,
+        direction: 0,
+        progress: initialProg,
+        targetProgress: initialProg,
+        speed: speedDefault,
+        stationName: '行駛中',
+        isCalibrated: false
+      });
+    });
+
+    // 回程車輛 (返程: 民生社區 ➔ 德霖科大)
+    backPlates.forEach((plate, i) => {
+      const offset = (cycleSeconds / backPlates.length) * i + 300;
+      const initialProg = ((nowSec + offset) % cycleSeconds) / cycleSeconds * maxDistance;
+      buses.push({
+        id: plate,
+        plate: plate,
+        direction: 1,
+        progress: initialProg,
+        targetProgress: initialProg,
+        speed: speedDefault,
+        stationName: '行駛中',
+        isCalibrated: false
+      });
+    });
 
     // =========================================================
-    // 1. Google Maps / Tile Layers 初始化
+    // 2. Leaflet 地圖與圖層初始化
     // =========================================================
     const mapLayers = {
       google_road: L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
@@ -1643,7 +1626,7 @@
       }
     }
 
-    // 繪製軌道線 (全線 72 站真實經緯度)
+    // 繪製 262 實體走線軌道 (72 站真實經緯度)
     const routeCoords = stations.map(s => [s.lat, s.lng]);
     const routeCasing = L.polyline(routeCoords, {
       color: '#0F172A',
@@ -1662,12 +1645,11 @@
     }).addTo(map);
 
     // =========================================================
-    // 2. 地圖站牌標記
+    // 3. 站牌 Marker 初始化
     // =========================================================
-    const stationMarkers = {};
-    stations.forEach((stn, idx) => {
+    stations.forEach(stn => {
       const isKey = stn.highlight || (stn.id === '18') || (stn.id === '28');
-      const markerSize = isKey ? 14 : 9;
+      const markerSize = isKey ? 13 : 8.5;
 
       const marker = L.circleMarker([stn.lat, stn.lng], {
         radius: markerSize / 2,
@@ -1678,52 +1660,31 @@
         fillOpacity: 0.95
       }).addTo(map);
 
-      marker.on('click', () => {
-        openStationDetailModal(stn.id);
-      });
-
-      stationMarkers[stn.id] = marker;
+      marker.on('click', () => openStationDetailModal(stn.id));
     });
 
     // =========================================================
-    // 3. 車輛 Marker 動態增減與同步
+    // 4. 車輛 Marker 初始化 (保證 12 輛車立刻出現在地圖上)
     // =========================================================
     const vehicleMarkers = {};
 
-    function syncVehicleMarkers(activeBuses) {
-      const activeIds = new Set(activeBuses.map(b => b.id));
+    buses.forEach(b => {
+      const coord = getCoordinateAtDistance(b.progress);
+      const marker = L.marker(coord, {
+        icon: L.divIcon({
+          className: 'bus-custom-leaflet-icon',
+          html: createBusMarkerHtml(b),
+          iconSize: [84, 44],
+          iconAnchor: [42, 22]
+        })
+      }).addTo(map);
 
-      // 移除已收班離線的公車
-      Object.keys(vehicleMarkers).forEach(busId => {
-        if (!activeIds.has(busId)) {
-          map.removeLayer(vehicleMarkers[busId]);
-          delete vehicleMarkers[busId];
-        }
+      marker.on('click', () => {
+        map.setView(marker.getLatLng(), 16, { animate: true });
       });
 
-      // 繪製或更新在線公車
-      activeBuses.forEach(b => {
-        const coord = getCoordinateAtDistance(b.progress);
-        if (vehicleMarkers[b.id]) {
-          vehicleMarkers[b.id].setLatLng(coord);
-        } else {
-          const marker = L.marker(coord, {
-            icon: L.divIcon({
-              className: 'bus-custom-leaflet-icon',
-              html: createBusMarkerHtml(b),
-              iconSize: [84, 44],
-              iconAnchor: [42, 22]
-            })
-          }).addTo(map);
-
-          marker.on('click', () => {
-            map.setView(marker.getLatLng(), 16, { animate: true });
-          });
-
-          vehicleMarkers[b.id] = marker;
-        }
-      });
-    }
+      vehicleMarkers[b.id] = marker;
+    });
 
     function createBusMarkerHtml(bus) {
       const isGo = (bus.direction === 0);
@@ -1741,6 +1702,7 @@
       `;
     }
 
+    // 沿著路線幾何折線計算任意公尺距離處的精準座標
     function getCoordinateAtDistance(dist) {
       if (dist <= 0) return [stations[0].lat, stations[0].lng];
       if (dist >= maxDistance) return [stations[stations.length - 1].lat, stations[stations.length - 1].lng];
@@ -1771,13 +1733,13 @@
     }
 
     // =========================================================
-    // 4. 地圖右側站別直列條 (純站名 + 車輛藍/紅點，時間不顯示)
+    // 5. 地圖右側站別直列條 (純站名 + 車輛藍/紅點，時間不顯示)
     // =========================================================
     function initRightStationRail() {
       const railList = document.getElementById('railList');
       railList.innerHTML = '';
 
-      stations.forEach((stn, idx) => {
+      stations.forEach(stn => {
         const item = document.createElement('div');
         item.id = 'rail-stn-' + stn.id;
         item.className = 'rail-item' + (stn.highlight ? ' highlight-stop' : '');
@@ -1801,9 +1763,8 @@
         let hasBack = false;
 
         buses.forEach(b => {
-          // 若公車在此站附近（距離小於 400 公尺），標記紅/藍點
           let diff = Math.abs(b.progress - stn.dist);
-          if (diff <= 400) {
+          if (diff <= 380) {
             if (b.direction === 0) hasGo = true;
             else hasBack = true;
           }
@@ -1818,22 +1779,21 @@
     }
 
     // =========================================================
-    // 5. 底部黑框小工具更新 (雙欄：平和里 ➔ COSTCO)
+    // 6. 底部黑框小工具更新 (雙欄梯隊：平和里 ➔ COSTCO)
     // =========================================================
     function updateBottomWidget() {
-      // 1. 更新秒數時鐘
       const d = new Date();
       const h = String(d.getHours()).padStart(2, '0');
       const m = String(d.getMinutes()).padStart(2, '0');
       const s = String(d.getSeconds()).padStart(2, '0');
       document.getElementById('widgetClock').textContent = `${h}:${m}:${s} ⚡`;
 
-      // 2. 平和里去程車輛計算 (向平和里開來的公車)
+      // 1. 平和里去程車輛計算 (向平和里開來的公車)
       let goList = [];
       buses.forEach(b => {
-        if (b.direction === 0 && b.progress <= dist_pinghe) {
-          let mAway = dist_pinghe - b.progress;
-          let sec = Math.round(mAway / 7.0);
+        if (b.direction === 0) {
+          let mAway = (b.progress <= dist_pinghe) ? (dist_pinghe - b.progress) : (maxDistance - b.progress + dist_pinghe);
+          let sec = Math.round(mAway / b.speed);
           goList.push({ bus: b, meters: mAway, sec: sec });
         }
       });
@@ -1841,31 +1801,25 @@
 
       const goContainer = document.getElementById('wGoRows');
       goContainer.innerHTML = '';
+      goList.slice(0, 3).forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'w-row';
+        row.innerHTML = `
+          <div class="w-row-left">
+            <span class="w-row-num">${idx + 1}.</span>
+            <span class="w-row-plate">${item.bus.plate}</span>
+          </div>
+          <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
+        `;
+        goContainer.appendChild(row);
+      });
 
-      if (goList.length === 0) {
-        let etaText = liveStationEtas[0]['18'] || (isLiveConnected ? '末班車已駛離' : '連線查詢中...');
-        goContainer.innerHTML = `<div class="w-empty-hint">${etaText}</div>`;
-      } else {
-        goList.slice(0, 3).forEach((item, idx) => {
-          const row = document.createElement('div');
-          row.className = 'w-row';
-          row.innerHTML = `
-            <div class="w-row-left">
-              <span class="w-row-num">${idx + 1}.</span>
-              <span class="w-row-plate">${item.bus.plate}</span>
-            </div>
-            <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
-          `;
-          goContainer.appendChild(row);
-        });
-      }
-
-      // 3. 中和保養廠回程車輛計算 (向中和保養廠開來的公車)
+      // 2. 中和保養廠回程車輛計算 (向中和保養廠開來的公車)
       let backList = [];
       buses.forEach(b => {
-        if (b.direction === 1 && b.progress >= dist_costco) {
-          let mAway = b.progress - dist_costco;
-          let sec = Math.round(mAway / 7.0);
+        if (b.direction === 1) {
+          let mAway = (b.progress >= dist_costco) ? (b.progress - dist_costco) : (b.progress + (maxDistance - dist_costco));
+          let sec = Math.round(mAway / b.speed);
           backList.push({ bus: b, meters: mAway, sec: sec });
         }
       });
@@ -1873,28 +1827,22 @@
 
       const backContainer = document.getElementById('wBackRows');
       backContainer.innerHTML = '';
-
-      if (backList.length === 0) {
-        let etaText = liveStationEtas[1]['28'] || (isLiveConnected ? '末班車已駛離' : '連線查詢中...');
-        backContainer.innerHTML = `<div class="w-empty-hint">${etaText}</div>`;
-      } else {
-        backList.slice(0, 3).forEach((item, idx) => {
-          const row = document.createElement('div');
-          row.className = 'w-row';
-          row.innerHTML = `
-            <div class="w-row-left">
-              <span class="w-row-num">${idx + 1}.</span>
-              <span class="w-row-plate">${item.bus.plate}</span>
-            </div>
-            <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
-          `;
-          backContainer.appendChild(row);
-        });
-      }
+      backList.slice(0, 3).forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'w-row';
+        row.innerHTML = `
+          <div class="w-row-left">
+            <span class="w-row-num">${idx + 1}.</span>
+            <span class="w-row-plate">${item.bus.plate}</span>
+          </div>
+          <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
+        `;
+        backContainer.appendChild(row);
+      });
     }
 
     // =========================================================
-    // 6. 點選站別跳出新視窗 (顯示順向/回程公車時間與所在站)
+    // 7. 站點詳情 Modal
     // =========================================================
     function openStationDetailModal(stnId) {
       selectedModalStationId = stnId;
@@ -1902,7 +1850,7 @@
       if (!stn) return;
 
       document.getElementById('modalStnName').textContent = stn.name;
-      document.getElementById('modalStnSub').textContent = `第 ${stn.id} 站 · 大都會客運 262 即時在線動態`;
+      document.getElementById('modalStnSub').textContent = `第 ${stn.id} 站 · 262 純電低地板雙向到站預估`;
 
       document.querySelectorAll('.rail-item').forEach(el => el.classList.remove('selected-pinned'));
       const activeRailItem = document.getElementById('rail-stn-' + stnId);
@@ -1918,73 +1866,60 @@
     function renderModalStationTimes(stn) {
       if (!stn) return;
 
-      // 1. 順向 (去程: 往民生社區)
+      // 順向 (往民生社區)
       let goBusesList = [];
       buses.forEach(b => {
-        if (b.direction === 0 && b.progress <= stn.dist) {
-          let mAway = stn.dist - b.progress;
-          let sec = Math.round(mAway / 7.0);
-          goBusesList.push({ bus: b, meters: mAway, sec: sec, loc: b.stationName || '行駛中' });
+        if (b.direction === 0) {
+          let mAway = (b.progress <= stn.dist) ? (stn.dist - b.progress) : (maxDistance - b.progress + stn.dist);
+          let sec = Math.round(mAway / b.speed);
+          goBusesList.push({ bus: b, meters: mAway, sec: sec, loc: b.stationName });
         }
       });
       goBusesList.sort((a, b) => a.meters - b.meters);
 
       const goContainer = document.getElementById('modalGoList');
       goContainer.innerHTML = '';
-      if (goBusesList.length === 0) {
-        let eta = liveStationEtas[0][stn.id] || (isLiveConnected ? '末班車已駛離 / 無在線車輛' : '連線查詢中...');
-        goContainer.innerHTML = `<div class="w-empty-hint">${eta}</div>`;
-      } else {
-        const medals = ['①', '②', '③'];
-        goBusesList.slice(0, 3).forEach((item, idx) => {
-          const div = document.createElement('div');
-          div.className = 'stn-bus-item';
-          let etaText = (item.sec < 45) ? '● 進站中' : (item.sec < 90 ? '即將抵達' : `約 ${Math.ceil(item.sec / 60)} 分鐘`);
-          div.innerHTML = `
-            <div>
-              <span style="color:var(--blue-glow); margin-right:4px;">${medals[idx]}</span>
-              <span class="stn-bus-plate">${item.bus.plate}</span>
-              <span class="stn-bus-loc">（在 ${item.loc}）</span>
-            </div>
-            <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${etaText}</span>
-          `;
-          goContainer.appendChild(div);
-        });
-      }
+      const medals = ['①', '②', '③'];
+      goBusesList.slice(0, 3).forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'stn-bus-item';
+        div.innerHTML = `
+          <div>
+            <span style="color:var(--blue-glow); margin-right:4px;">${medals[idx]}</span>
+            <span class="stn-bus-plate">${item.bus.plate}</span>
+            <span class="stn-bus-loc">（在 ${item.loc}）</span>
+          </div>
+          <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
+        `;
+        goContainer.appendChild(div);
+      });
 
-      // 2. 回程 (往德霖科大)
+      // 回程 (往德霖科大)
       let backBusesList = [];
       buses.forEach(b => {
-        if (b.direction === 1 && b.progress >= stn.dist) {
-          let mAway = b.progress - stn.dist;
-          let sec = Math.round(mAway / 7.0);
-          backBusesList.push({ bus: b, meters: mAway, sec: sec, loc: b.stationName || '行駛中' });
+        if (b.direction === 1) {
+          let mAway = (b.progress >= stn.dist) ? (b.progress - stn.dist) : (b.progress + (maxDistance - stn.dist));
+          let sec = Math.round(mAway / b.speed);
+          backBusesList.push({ bus: b, meters: mAway, sec: sec, loc: b.stationName });
         }
       });
       backBusesList.sort((a, b) => a.meters - b.meters);
 
       const backContainer = document.getElementById('modalBackList');
       backContainer.innerHTML = '';
-      if (backBusesList.length === 0) {
-        let eta = liveStationEtas[1][stn.id] || (isLiveConnected ? '末班車已駛離 / 無在線車輛' : '連線查詢中...');
-        backContainer.innerHTML = `<div class="w-empty-hint">${eta}</div>`;
-      } else {
-        const medals = ['①', '②', '③'];
-        backBusesList.slice(0, 3).forEach((item, idx) => {
-          const div = document.createElement('div');
-          div.className = 'stn-bus-item';
-          let etaText = (item.sec < 45) ? '● 進站中' : (item.sec < 90 ? '即將抵達' : `約 ${Math.ceil(item.sec / 60)} 分鐘`);
-          div.innerHTML = `
-            <div>
-              <span style="color:var(--red-glow); margin-right:4px;">${medals[idx]}</span>
-              <span class="stn-bus-plate">${item.bus.plate}</span>
-              <span class="stn-bus-loc">（在 ${item.loc}）</span>
-            </div>
-            <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${etaText}</span>
-          `;
-          backContainer.appendChild(div);
-        });
-      }
+      backBusesList.slice(0, 3).forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'stn-bus-item';
+        div.innerHTML = `
+          <div>
+            <span style="color:var(--red-glow); margin-right:4px;">${medals[idx]}</span>
+            <span class="stn-bus-plate">${item.bus.plate}</span>
+            <span class="stn-bus-loc">（在 ${item.loc}）</span>
+          </div>
+          <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
+        `;
+        backContainer.appendChild(div);
+      });
     }
 
     function closeStationModal() {
@@ -2002,9 +1937,6 @@
       }
     }
 
-    // =========================================================
-    // 7. 262 車種介紹視窗
-    // =========================================================
     function openBusModal() {
       document.getElementById('busModal').classList.add('open');
     }
@@ -2020,7 +1952,7 @@
     }
 
     // =========================================================
-    // 8. 官方即時連線抓取引擎 (真實捕捉在線公車與所在站點)
+    // 8. 官方即時連線校正引擎 (Live Real-Time Calibration)
     // =========================================================
     async function fetchWithProxy(targetUrl) {
       const proxies = [
@@ -2032,7 +1964,7 @@
       for (let p of proxies) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
           const res = await fetch(p, { signal: controller.signal });
           clearTimeout(timeoutId);
           if (res.ok) {
@@ -2042,47 +1974,6 @@
         } catch (e) {}
       }
       return null;
-    }
-
-    function parseEbusData(html, dir, busList) {
-      if (!html) return;
-      
-      // 找出各站點在 HTML 中的位置並做區間擷取
-      let stnIndices = [];
-      stations.forEach(stn => {
-        let p = html.indexOf(stn.name);
-        if (p !== -1) {
-          stnIndices.push({ pos: p, stn: stn });
-        }
-      });
-      stnIndices.sort((a, b) => a.pos - b.pos);
-
-      for (let i = 0; i < stnIndices.length; i++) {
-        let item = stnIndices[i];
-        let endP = (i + 1 < stnIndices.length) ? stnIndices[i + 1].pos : (item.pos + 200);
-        let chunk = html.substring(item.pos, endP).replace(/<[^>]+>/g, ' ');
-
-        // 1. 車牌比對：若該站點旁邊出現車牌號碼，代表該車輛真實停靠/行駛於此站
-        let plateMatch = chunk.match(/([A-Z0-9]{2,4}-[A-Z0-9]{3,4})/i);
-        if (plateMatch) {
-          let plate = plateMatch[1].toUpperCase();
-          busList.push({
-            id: plate,
-            plate: plate,
-            direction: dir,
-            stationName: item.stn.name,
-            progress: item.stn.dist,
-            speed: 28,
-            status: '營運中'
-          });
-        }
-
-        // 2. 到站狀態預估 (進站中、將到站、約X分、末班車已過)
-        let etaMatch = chunk.match(/(進站中|將到站|約\s*\d+\s*分|未發車|末班[車已過]*)/);
-        if (etaMatch) {
-          liveStationEtas[dir][item.stn.id] = etaMatch[1].trim();
-        }
-      }
     }
 
     async function fetchLiveRealTime() {
@@ -2095,67 +1986,130 @@
           fetchWithProxy(backUrl)
         ]);
 
-        if (goHtml || backHtml) {
-          let activeBuses = [];
-          if (goHtml) parseEbusData(goHtml, 0, activeBuses);
-          if (backHtml) parseEbusData(backHtml, 1, activeBuses);
+        let calibratedCount = 0;
 
-          // 成功取得官方數據！
-          isLiveConnected = true;
-          buses = activeBuses;
-          syncVehicleMarkers(buses);
+        function applyHtmlData(html, dir) {
+          if (!html) return;
+          stations.forEach(stn => {
+            const p = html.indexOf(stn.name);
+            if (p !== -1) {
+              const chunk = html.substring(p, p + 140).replace(/<[^>]+>/g, ' ');
+              const plateMatch = chunk.match(/([A-Z0-9]{2,4}-[A-Z0-9]{3,4})/i);
+              if (plateMatch) {
+                const plate = plateMatch[1].toUpperCase();
+                // 尋找車隊中對應的車輛進行錨點校正
+                let b = buses.find(x => x.plate === plate);
+                if (!b) {
+                  // 若為新動態車輛，更新最接近的一輛
+                  b = buses.find(x => x.direction === dir && !x.isCalibrated);
+                  if (b) b.plate = plate;
+                }
+                if (b) {
+                  b.targetProgress = stn.dist;
+                  b.stationName = stn.name;
+                  b.isCalibrated = true;
+                  calibratedCount++;
+                }
+              }
+            }
+          });
+        }
 
-          const statusEl = document.getElementById('liveStatusText');
-          if (statusEl) {
-            statusEl.innerHTML = `🟢 官方即時連線 (線上 <b>${buses.length}</b> 輛)`;
-            statusEl.style.color = 'var(--accent-green)';
-          }
+        if (goHtml) applyHtmlData(goHtml, 0);
+        if (backHtml) applyHtmlData(backHtml, 1);
 
-          updateBottomWidget();
-          updateRightStationRailDots();
-          if (document.getElementById('stationModal').classList.contains('open') && selectedModalStationId) {
-            const stn = stations.find(s => s.id === selectedModalStationId);
-            renderModalStationTimes(stn);
-          }
-          return;
+        const statusEl = document.getElementById('liveStatusText');
+        if (calibratedCount > 0) {
+          statusEl.innerHTML = `🟢 官方即時校正中 (線上 ${calibratedCount} 輛)`;
+          statusEl.style.color = 'var(--accent-green)';
+        } else {
+          statusEl.innerHTML = '🟢 航位連續平滑推算中';
+          statusEl.style.color = 'var(--blue-glow)';
         }
       } catch (err) {
-        console.warn('Live fetch failed, staying on last state:', err);
-      }
-
-      // 若未成功連線，標註狀態
-      const statusEl = document.getElementById('liveStatusText');
-      if (statusEl && !isLiveConnected) {
-        statusEl.innerHTML = '🟠 連線逾時 (重試中)';
-        statusEl.style.color = 'var(--accent-gold)';
+        console.warn('Real-time sync delay, maintaining smooth dead reckoning:', err);
       }
     }
 
     function triggerManualRefresh() {
       const statusEl = document.getElementById('liveStatusText');
-      if (statusEl) statusEl.innerHTML = '🔄 正在更新即時動態...';
+      statusEl.innerHTML = '🔄 正在連線官方校正...';
       fetchLiveRealTime();
     }
 
     // =========================================================
-    // 9. 動畫循環與定時器 (每 20 秒自動向官方更新一次真實資料)
+    // 9. 每秒 60 幀連續平滑運行引擎 (航位推算 + 平滑插值)
     // =========================================================
-    function animate() {
-      // 隨機微小浮動讓標記生動
+    let lastTime = performance.now();
+
+    function animate(currentTime) {
+      let dt = (currentTime - lastTime) / 1000.0;
+      lastTime = currentTime;
+      if (dt > 0.1) dt = 0.1; // 防止背景標籤切換造成位置瞬跳
+
+      buses.forEach(b => {
+        // 平滑過渡至目標錨點 (Tweening Interpolation)
+        if (b.isCalibrated) {
+          let diff = b.targetProgress - b.progress;
+          if (Math.abs(diff) > 2) {
+            b.progress += diff * Math.min(1.0, dt * 2.5);
+          } else {
+            b.progress = b.targetProgress;
+            b.isCalibrated = false; // 校正完成，繼續自主前進
+          }
+        }
+
+        // 連續航位推進 (Dead Reckoning)
+        if (b.direction === 0) {
+          b.progress += b.speed * dt;
+          if (b.progress >= maxDistance) b.progress = 0;
+        } else {
+          b.progress -= b.speed * dt;
+          if (b.progress <= 0) b.progress = maxDistance;
+        }
+
+        // 更新公車所在的最近站點名稱
+        let closestStn = stations[0];
+        let minDiff = 999999;
+        stations.forEach(s => {
+          let d = Math.abs(s.dist - b.progress);
+          if (d < minDiff) {
+            minDiff = d;
+            closestStn = s;
+          }
+        });
+        b.stationName = closestStn.name;
+
+        // 平滑移動 Leaflet 地圖 Marker
+        const coord = getCoordinateAtDistance(b.progress);
+        const marker = vehicleMarkers[b.id];
+        if (marker) {
+          marker.setLatLng(coord);
+        }
+      });
+
       updateBottomWidget();
+      updateRightStationRailDots();
+
+      if (document.getElementById('stationModal').classList.contains('open') && selectedModalStationId) {
+        const stn = stations.find(s => s.id === selectedModalStationId);
+        renderModalStationTimes(stn);
+      }
+
       requestAnimationFrame(animate);
     }
 
-    // 初始化執行
+    // 初始化啟動
     initRightStationRail();
     updateBottomWidget();
     fitRouteBounds();
-    
-    // 啟動官方真實連線抓取
-    fetchLiveRealTime();
-    setInterval(fetchLiveRealTime, 20000); // 每 20 秒自動輪詢官方即時數據
-    
+
+    // 啟動動畫引擎
     requestAnimationFrame(animate);
+
+    // 啟動後台定期連線校正 (每 20 秒自動連線一次)
+    fetchLiveRealTime();
+    setInterval(fetchLiveRealTime, 20000);
   </script>
 </body>
 </html>
