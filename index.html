@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>262 公車即時動態智慧站牌</title>
+  <title>262 公車即時動態智慧站牌 (官方真即時連網版)</title>
   
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -61,7 +61,6 @@
       background: #0B0F19;
     }
 
-    /* Custom Scrollbars */
     ::-webkit-scrollbar {
       width: 4px;
       height: 4px;
@@ -82,7 +81,7 @@
       top: 10px;
       left: 10px;
       right: 98px;
-      max-width: 520px;
+      max-width: 540px;
       z-index: 1000;
       background: rgba(9, 13, 22, 0.9);
       backdrop-filter: blur(16px);
@@ -93,7 +92,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 6px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
 
@@ -117,7 +116,7 @@
     }
 
     .brand-title {
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       color: var(--text-main);
       white-space: nowrap;
@@ -125,9 +124,12 @@
       text-overflow: ellipsis;
     }
     .brand-sub {
-      font-size: 10px;
-      color: var(--text-muted);
+      font-size: 9.5px;
+      color: var(--accent-green);
       white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .top-actions {
@@ -154,16 +156,6 @@
     .top-btn:hover {
       background: #334155;
     }
-    .top-btn.active-go {
-      background: var(--blue-go);
-      color: #FFF;
-      border-color: var(--blue-glow);
-    }
-    .top-btn.active-back {
-      background: var(--red-back);
-      color: #FFF;
-      border-color: var(--red-glow);
-    }
 
     .layer-select {
       background: #1E293B;
@@ -171,20 +163,20 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 6px;
       padding: 4px 6px;
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 600;
       cursor: pointer;
       outline: none;
     }
 
     /* =========================================================
-       2. RIGHT STATION RAIL (地圖右側站別直列條)
+       2. RIGHT STATION RAIL (地圖右側站別直列條，車輛藍紅點表示，不顯示時間)
        ========================================================= */
     .right-station-rail {
       position: fixed;
       right: 8px;
       top: 10px;
-      bottom: 180px;
+      bottom: 195px;
       width: 84px;
       z-index: 950;
       background: rgba(9, 13, 22, 0.88);
@@ -290,11 +282,11 @@
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--border-subtle);
       border-radius: 14px;
-      padding: 9px 12px 8px 12px;
+      padding: 8px 12px 7px 12px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65);
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 4px;
     }
 
     /* Widget Header */
@@ -303,7 +295,7 @@
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      padding-bottom: 5px;
+      padding-bottom: 4px;
     }
     .w-header-left {
       display: flex;
@@ -314,19 +306,19 @@
       background: var(--blue-go);
       color: #FFF;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 800;
       padding: 1px 5px;
       border-radius: 4px;
     }
     .w-title {
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 700;
       color: var(--text-main);
     }
     .w-clock {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 700;
       color: var(--blue-glow);
     }
@@ -343,7 +335,7 @@
     .w-col {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 2.5px;
     }
 
     .w-col-header {
@@ -353,14 +345,14 @@
       margin-bottom: 2px;
     }
     .w-col-name {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 800;
     }
     .w-col-name.go { color: var(--blue-glow); }
     .w-col-name.back { color: var(--red-glow); }
 
     .w-col-sub {
-      font-size: 9px;
+      font-size: 8.5px;
       color: var(--text-dim);
     }
 
@@ -368,8 +360,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 10px;
-      padding: 2px 0;
+      font-size: 9.5px;
+      padding: 1.5px 0;
     }
     .w-row-left {
       display: flex;
@@ -379,17 +371,23 @@
     }
     .w-row-num {
       color: var(--text-dim);
-      font-size: 9.5px;
+      font-size: 9px;
     }
     .w-row-plate {
       font-weight: 700;
       color: #FFF;
-      font-size: 10.5px;
+      font-size: 10px;
     }
     .w-row-eta {
       font-family: 'JetBrains Mono', monospace;
       font-weight: 800;
-      font-size: 10.5px;
+      font-size: 10px;
+    }
+    .w-empty-hint {
+      font-size: 9.5px;
+      color: var(--text-dim);
+      padding: 8px 0;
+      text-align: center;
     }
 
     .w-divider {
@@ -400,20 +398,20 @@
 
     /* Bus Intro 1-line Button (左下大公車圖縮小成一行字) */
     .w-bus-intro-btn {
-      height: 25px;
-      line-height: 25px;
-      font-size: 11px;
+      height: 24px;
+      line-height: 24px;
+      font-size: 10.5px;
       font-weight: 700;
       color: var(--blue-glow);
       background: #1E293B;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 5px;
-      margin-top: 2px;
+      margin-top: 1px;
       width: 100%;
       transition: background 0.15s, color 0.15s;
     }
@@ -422,7 +420,7 @@
       color: #FFF;
     }
     .w-bus-icon {
-      font-size: 12px;
+      font-size: 11.5px;
       line-height: 1;
     }
 
@@ -640,7 +638,7 @@
       padding: 2px 6px;
       border-radius: 12px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 800;
       color: #FFF;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -659,11 +657,6 @@
     }
     .bus-dot-beacon.blue-go { background: var(--blue-glow); }
     .bus-dot-beacon.red-back { background: var(--red-glow); }
-
-    /* ETA colors */
-    .eta-arriving { color: var(--accent-green); }
-    .eta-soon { color: var(--accent-gold); }
-    .eta-normal { color: #FFF; }
   </style>
 </head>
 <body>
@@ -677,11 +670,15 @@
       <div class="route-pill">262</div>
       <div style="line-height:1.2;">
         <div class="brand-title">德霖科大 ↔ 民生社區</div>
-        <div class="brand-sub">大都會客運 · 純電低地板</div>
+        <div class="brand-sub" id="liveStatusText">🟢 官方即時連線中...</div>
       </div>
     </div>
 
     <div class="top-actions">
+      <button class="top-btn" onclick="triggerManualRefresh()" title="重新整理真實公車動態">
+        <span>🔄 更新</span>
+      </button>
+
       <button class="top-btn" id="btnOverview" onclick="fitRouteBounds()" title="全線概覽">
         <span>全線</span>
       </button>
@@ -745,7 +742,7 @@
     <button class="w-bus-intro-btn" onclick="openBusModal()" title="點擊檢視 262 車種詳細介紹與配備資訊">
       <span class="w-bus-icon">🚌</span>
       <span>262 車種介紹</span>
-      <span style="font-size:10px;">↗</span>
+      <span style="font-size:9.5px;">↗</span>
     </button>
   </div>
 
@@ -767,7 +764,7 @@
       <div class="stn-dir-card">
         <div class="stn-dir-title go">
           <span>🔵 順向 · 往民生社區 (去程)</span>
-          <span style="font-size:10.5px; font-weight:600; color:var(--text-muted);">最近 3 班車</span>
+          <span style="font-size:10px; font-weight:600; color:var(--text-muted);" id="modalGoCount">即時在線</span>
         </div>
         <div class="stn-bus-list" id="modalGoList">
           <!-- Rendered via JS -->
@@ -778,7 +775,7 @@
       <div class="stn-dir-card">
         <div class="stn-dir-title back">
           <span>🔴 回程 · 往德霖科大 (返程)</span>
-          <span style="font-size:10.5px; font-weight:600; color:var(--text-muted);">最近 3 班車</span>
+          <span style="font-size:10px; font-weight:600; color:var(--text-muted);" id="modalBackCount">即時在線</span>
         </div>
         <div class="stn-bus-list" id="modalBackList">
           <!-- Rendered via JS -->
@@ -1602,56 +1599,15 @@
 ];
     const maxDistance = stations[stations.length - 1].dist; // 25538m
 
-    // 雙端毫秒同步排班引擎 (與手機 Scriptable 100% 毫秒同步)
-    const cycle = 3600; // 60分鐘一圈循環
-    const numBuses = 6;
-    const effectiveSpeed = maxDistance / cycle; // ~7.0938 m/s (~25.5 km/h)
-    const goPlates = ["EAL-0126", "EAL-0152", "EAL-0122", "EAL-0151", "EAL-0138", "EAL-0150"];
-    const backPlates = ["EAL-0160", "EAL-0161", "EAL-0162", "EAL-0163", "EAL-0165", "EAL-0166"];
-
     const dist_pinghe = 5132; // 平和里
     const dist_costco = 8658; // 中和保養廠
 
-    let currentDirection = 0; // 0: 去程 (往民生社區), 1: 回程 (往德霖科大)
     let selectedModalStationId = null;
 
-    function computeDeterministicBuses() {
-      const now = Math.floor(Date.now() / 1000);
-      let list = [];
-
-      // 262 全程車
-      for (let i = 0; i < numBuses; i++) {
-        let offset = i * (cycle / numBuses);
-        let progGo = ((now + offset) % cycle) / cycle * maxDistance;
-        list.push({
-          id: goPlates[i],
-          plate: goPlates[i],
-          direction: 0,
-          busIndex: i,
-          routeLabel: '262',
-          progress: progGo,
-          speed: 38,
-          status: '營運中'
-        });
-
-        let backRatio = ((now + offset + 300) % cycle) / cycle;
-        let progBack = (1 - backRatio) * maxDistance;
-        list.push({
-          id: backPlates[i],
-          plate: backPlates[i],
-          direction: 1,
-          busIndex: i,
-          routeLabel: '262',
-          progress: progBack,
-          speed: 38,
-          status: '營運中'
-        });
-      }
-
-      return list;
-    }
-
-    let buses = computeDeterministicBuses();
+    // 真正線上營運中的公車動態列表 (預設為空，由即時 API 連網抓取填入)
+    let buses = [];
+    let liveStationEtas = { 0: {}, 1: {} };
+    let isLiveConnected = false;
 
     // =========================================================
     // 1. Google Maps / Tile Layers 初始化
@@ -1706,7 +1662,7 @@
     }).addTo(map);
 
     // =========================================================
-    // 2. 地圖站牌標記 (點擊亦跳出該站新視窗)
+    // 2. 地圖站牌標記
     // =========================================================
     const stationMarkers = {};
     stations.forEach((stn, idx) => {
@@ -1730,26 +1686,44 @@
     });
 
     // =========================================================
-    // 3. 公車圖示 Marker
+    // 3. 車輛 Marker 動態增減與同步
     // =========================================================
     const vehicleMarkers = {};
-    buses.forEach(b => {
-      const coord = getCoordinateAtDistance(b.progress);
-      const marker = L.marker(coord, {
-        icon: L.divIcon({
-          className: 'bus-custom-leaflet-icon',
-          html: createBusMarkerHtml(b),
-          iconSize: [84, 44],
-          iconAnchor: [42, 22]
-        })
-      }).addTo(map);
 
-      marker.on('click', () => {
-        map.setView(marker.getLatLng(), 16, { animate: true });
+    function syncVehicleMarkers(activeBuses) {
+      const activeIds = new Set(activeBuses.map(b => b.id));
+
+      // 移除已收班離線的公車
+      Object.keys(vehicleMarkers).forEach(busId => {
+        if (!activeIds.has(busId)) {
+          map.removeLayer(vehicleMarkers[busId]);
+          delete vehicleMarkers[busId];
+        }
       });
 
-      vehicleMarkers[b.id] = marker;
-    });
+      // 繪製或更新在線公車
+      activeBuses.forEach(b => {
+        const coord = getCoordinateAtDistance(b.progress);
+        if (vehicleMarkers[b.id]) {
+          vehicleMarkers[b.id].setLatLng(coord);
+        } else {
+          const marker = L.marker(coord, {
+            icon: L.divIcon({
+              className: 'bus-custom-leaflet-icon',
+              html: createBusMarkerHtml(b),
+              iconSize: [84, 44],
+              iconAnchor: [42, 22]
+            })
+          }).addTo(map);
+
+          marker.on('click', () => {
+            map.setView(marker.getLatLng(), 16, { animate: true });
+          });
+
+          vehicleMarkers[b.id] = marker;
+        }
+      });
+    }
 
     function createBusMarkerHtml(bus) {
       const isGo = (bus.direction === 0);
@@ -1759,16 +1733,14 @@
       return `
         <div class="bus-marker-container">
           <div class="bus-marker-pill ${colorClass}">
-            <span style="font-size:9px; background:rgba(0,0,0,0.35); padding:1px 3px; border-radius:3px;">${bus.routeLabel}</span>
+            <span style="font-size:8.5px; background:rgba(0,0,0,0.35); padding:1px 3px; border-radius:3px;">262</span>
             <span>${dirArrow} ${bus.plate}</span>
-            <span style="color:var(--accent-gold); font-size:9px;">${Math.round(bus.speed)}k</span>
           </div>
           <div class="bus-dot-beacon ${colorClass}"></div>
         </div>
       `;
     }
 
-    // 依距離計算經緯度
     function getCoordinateAtDistance(dist) {
       if (dist <= 0) return [stations[0].lat, stations[0].lng];
       if (dist >= maxDistance) return [stations[stations.length - 1].lat, stations[stations.length - 1].lng];
@@ -1784,19 +1756,6 @@
         }
       }
       return [stations[0].lat, stations[0].lng];
-    }
-
-    function getStationNearDistance(dist) {
-      let nearest = stations[0];
-      let minDiff = 999999;
-      for (let s of stations) {
-        let diff = Math.abs(s.dist - dist);
-        if (diff < minDiff) {
-          minDiff = diff;
-          nearest = s;
-        }
-      }
-      return nearest;
     }
 
     function formatSecs(secs) {
@@ -1834,7 +1793,6 @@
     }
 
     function updateRightStationRailDots() {
-      // 遍歷所有車站，檢測有無公車在該站附近 (350公尺內)
       stations.forEach(stn => {
         const dotsContainer = document.getElementById('dots-' + stn.id);
         if (!dotsContainer) return;
@@ -1843,16 +1801,17 @@
         let hasBack = false;
 
         buses.forEach(b => {
+          // 若公車在此站附近（距離小於 400 公尺），標記紅/藍點
           let diff = Math.abs(b.progress - stn.dist);
-          if (diff <= 360) {
+          if (diff <= 400) {
             if (b.direction === 0) hasGo = true;
             else hasBack = true;
           }
         });
 
         let dotsHtml = '';
-        if (hasGo) dotsHtml += '<span class="dot-go" title="去程車接近">🔵</span>';
-        if (hasBack) dotsHtml += '<span class="dot-back" title="回程車接近">🔴</span>';
+        if (hasGo) dotsHtml += '<span class="dot-go" title="去程車在此站">🔵</span>';
+        if (hasBack) dotsHtml += '<span class="dot-back" title="回程車在此站">🔴</span>';
 
         dotsContainer.innerHTML = dotsHtml;
       });
@@ -1869,12 +1828,12 @@
       const s = String(d.getSeconds()).padStart(2, '0');
       document.getElementById('widgetClock').textContent = `${h}:${m}:${s} ⚡`;
 
-      // 2. 計算平和里去程最近 2 班車
+      // 2. 平和里去程車輛計算 (向平和里開來的公車)
       let goList = [];
       buses.forEach(b => {
-        if (b.direction === 0) {
-          let mAway = (b.progress <= dist_pinghe) ? (dist_pinghe - b.progress) : ((maxDistance - b.progress) + dist_pinghe);
-          let sec = Math.round(mAway / effectiveSpeed);
+        if (b.direction === 0 && b.progress <= dist_pinghe) {
+          let mAway = dist_pinghe - b.progress;
+          let sec = Math.round(mAway / 7.0);
           goList.push({ bus: b, meters: mAway, sec: sec });
         }
       });
@@ -1882,25 +1841,31 @@
 
       const goContainer = document.getElementById('wGoRows');
       goContainer.innerHTML = '';
-      goList.slice(0, 3).forEach((item, idx) => {
-        const row = document.createElement('div');
-        row.className = 'w-row';
-        row.innerHTML = `
-          <div class="w-row-left">
-            <span class="w-row-num">${idx + 1}.</span>
-            <span class="w-row-plate">${item.bus.plate}</span>
-          </div>
-          <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
-        `;
-        goContainer.appendChild(row);
-      });
 
-      // 3. 計算中和保養廠回程最近 2 班車
+      if (goList.length === 0) {
+        let etaText = liveStationEtas[0]['18'] || (isLiveConnected ? '末班車已駛離' : '連線查詢中...');
+        goContainer.innerHTML = `<div class="w-empty-hint">${etaText}</div>`;
+      } else {
+        goList.slice(0, 3).forEach((item, idx) => {
+          const row = document.createElement('div');
+          row.className = 'w-row';
+          row.innerHTML = `
+            <div class="w-row-left">
+              <span class="w-row-num">${idx + 1}.</span>
+              <span class="w-row-plate">${item.bus.plate}</span>
+            </div>
+            <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
+          `;
+          goContainer.appendChild(row);
+        });
+      }
+
+      // 3. 中和保養廠回程車輛計算 (向中和保養廠開來的公車)
       let backList = [];
       buses.forEach(b => {
-        if (b.direction === 1) {
-          let mAway = (b.progress >= dist_costco) ? (b.progress - dist_costco) : (b.progress + (maxDistance - dist_costco));
-          let sec = Math.round(mAway / effectiveSpeed);
+        if (b.direction === 1 && b.progress >= dist_costco) {
+          let mAway = b.progress - dist_costco;
+          let sec = Math.round(mAway / 7.0);
           backList.push({ bus: b, meters: mAway, sec: sec });
         }
       });
@@ -1908,18 +1873,24 @@
 
       const backContainer = document.getElementById('wBackRows');
       backContainer.innerHTML = '';
-      backList.slice(0, 3).forEach((item, idx) => {
-        const row = document.createElement('div');
-        row.className = 'w-row';
-        row.innerHTML = `
-          <div class="w-row-left">
-            <span class="w-row-num">${idx + 1}.</span>
-            <span class="w-row-plate">${item.bus.plate}</span>
-          </div>
-          <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
-        `;
-        backContainer.appendChild(row);
-      });
+
+      if (backList.length === 0) {
+        let etaText = liveStationEtas[1]['28'] || (isLiveConnected ? '末班車已駛離' : '連線查詢中...');
+        backContainer.innerHTML = `<div class="w-empty-hint">${etaText}</div>`;
+      } else {
+        backList.slice(0, 3).forEach((item, idx) => {
+          const row = document.createElement('div');
+          row.className = 'w-row';
+          row.innerHTML = `
+            <div class="w-row-left">
+              <span class="w-row-num">${idx + 1}.</span>
+              <span class="w-row-plate">${item.bus.plate}</span>
+            </div>
+            <span class="w-row-eta" style="color: ${getSecsColor(item.sec)}">${formatSecs(item.sec)}</span>
+          `;
+          backContainer.appendChild(row);
+        });
+      }
     }
 
     // =========================================================
@@ -1931,9 +1902,8 @@
       if (!stn) return;
 
       document.getElementById('modalStnName').textContent = stn.name;
-      document.getElementById('modalStnSub').textContent = `第 ${stn.id} 站 · 全線 262 純電低地板雙向到站預報`;
+      document.getElementById('modalStnSub').textContent = `第 ${stn.id} 站 · 大都會客運 262 即時在線動態`;
 
-      // Highlight in rail
       document.querySelectorAll('.rail-item').forEach(el => el.classList.remove('selected-pinned'));
       const activeRailItem = document.getElementById('rail-stn-' + stnId);
       if (activeRailItem) {
@@ -1951,61 +1921,70 @@
       // 1. 順向 (去程: 往民生社區)
       let goBusesList = [];
       buses.forEach(b => {
-        if (b.direction === 0) {
-          let mAway = (b.progress <= stn.dist) ? (stn.dist - b.progress) : ((maxDistance - b.progress) + stn.dist);
-          let sec = Math.round(mAway / effectiveSpeed);
-          let nearStn = getStationNearDistance(b.progress);
-          goBusesList.push({ bus: b, meters: mAway, sec: sec, loc: nearStn.name });
+        if (b.direction === 0 && b.progress <= stn.dist) {
+          let mAway = stn.dist - b.progress;
+          let sec = Math.round(mAway / 7.0);
+          goBusesList.push({ bus: b, meters: mAway, sec: sec, loc: b.stationName || '行駛中' });
         }
       });
       goBusesList.sort((a, b) => a.meters - b.meters);
 
       const goContainer = document.getElementById('modalGoList');
       goContainer.innerHTML = '';
-      const medals = ['①', '②', '③'];
-      goBusesList.slice(0, 3).forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = 'stn-bus-item';
-        let etaText = (item.sec < 45) ? '● 進站中' : (item.sec < 90 ? '即將抵達' : `約 ${Math.ceil(item.sec / 60)} 分鐘`);
-        div.innerHTML = `
-          <div>
-            <span style="color:var(--blue-glow); margin-right:4px;">${medals[idx]}</span>
-            <span class="stn-bus-plate">${item.bus.plate}</span>
-            <span class="stn-bus-loc">（在 ${item.loc}）</span>
-          </div>
-          <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${etaText}</span>
-        `;
-        goContainer.appendChild(div);
-      });
+      if (goBusesList.length === 0) {
+        let eta = liveStationEtas[0][stn.id] || (isLiveConnected ? '末班車已駛離 / 無在線車輛' : '連線查詢中...');
+        goContainer.innerHTML = `<div class="w-empty-hint">${eta}</div>`;
+      } else {
+        const medals = ['①', '②', '③'];
+        goBusesList.slice(0, 3).forEach((item, idx) => {
+          const div = document.createElement('div');
+          div.className = 'stn-bus-item';
+          let etaText = (item.sec < 45) ? '● 進站中' : (item.sec < 90 ? '即將抵達' : `約 ${Math.ceil(item.sec / 60)} 分鐘`);
+          div.innerHTML = `
+            <div>
+              <span style="color:var(--blue-glow); margin-right:4px;">${medals[idx]}</span>
+              <span class="stn-bus-plate">${item.bus.plate}</span>
+              <span class="stn-bus-loc">（在 ${item.loc}）</span>
+            </div>
+            <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${etaText}</span>
+          `;
+          goContainer.appendChild(div);
+        });
+      }
 
       // 2. 回程 (往德霖科大)
       let backBusesList = [];
       buses.forEach(b => {
-        if (b.direction === 1) {
-          let mAway = (b.progress >= stn.dist) ? (b.progress - stn.dist) : (b.progress + (maxDistance - stn.dist));
-          let sec = Math.round(mAway / effectiveSpeed);
-          let nearStn = getStationNearDistance(b.progress);
-          backBusesList.push({ bus: b, meters: mAway, sec: sec, loc: nearStn.name });
+        if (b.direction === 1 && b.progress >= stn.dist) {
+          let mAway = b.progress - stn.dist;
+          let sec = Math.round(mAway / 7.0);
+          backBusesList.push({ bus: b, meters: mAway, sec: sec, loc: b.stationName || '行駛中' });
         }
       });
       backBusesList.sort((a, b) => a.meters - b.meters);
 
       const backContainer = document.getElementById('modalBackList');
       backContainer.innerHTML = '';
-      backBusesList.slice(0, 3).forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = 'stn-bus-item';
-        let etaText = (item.sec < 45) ? '● 進站中' : (item.sec < 90 ? '即將抵達' : `約 ${Math.ceil(item.sec / 60)} 分鐘`);
-        div.innerHTML = `
-          <div>
-            <span style="color:var(--red-glow); margin-right:4px;">${medals[idx]}</span>
-            <span class="stn-bus-plate">${item.bus.plate}</span>
-            <span class="stn-bus-loc">（在 ${item.loc}）</span>
-          </div>
-          <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${etaText}</span>
-        `;
-        backContainer.appendChild(div);
-      });
+      if (backBusesList.length === 0) {
+        let eta = liveStationEtas[1][stn.id] || (isLiveConnected ? '末班車已駛離 / 無在線車輛' : '連線查詢中...');
+        backContainer.innerHTML = `<div class="w-empty-hint">${eta}</div>`;
+      } else {
+        const medals = ['①', '②', '③'];
+        backBusesList.slice(0, 3).forEach((item, idx) => {
+          const div = document.createElement('div');
+          div.className = 'stn-bus-item';
+          let etaText = (item.sec < 45) ? '● 進站中' : (item.sec < 90 ? '即將抵達' : `約 ${Math.ceil(item.sec / 60)} 分鐘`);
+          div.innerHTML = `
+            <div>
+              <span style="color:var(--red-glow); margin-right:4px;">${medals[idx]}</span>
+              <span class="stn-bus-plate">${item.bus.plate}</span>
+              <span class="stn-bus-loc">（在 ${item.loc}）</span>
+            </div>
+            <span class="stn-bus-eta" style="color:${getSecsColor(item.sec)}">${etaText}</span>
+          `;
+          backContainer.appendChild(div);
+        });
+      }
     }
 
     function closeStationModal() {
@@ -2041,55 +2020,141 @@
     }
 
     // =========================================================
-    // 8. 物理運動與動畫更新循環
+    // 8. 官方即時連線抓取引擎 (真實捕捉在線公車與所在站點)
     // =========================================================
-    let lastTime = performance.now();
-    let uiTimer = 0;
+    async function fetchWithProxy(targetUrl) {
+      const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+      ];
 
-    function animate(currentTime) {
-      const dt = (currentTime - lastTime) / 1000;
-      lastTime = currentTime;
+      for (let p of proxies) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          const res = await fetch(p, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const text = await res.text();
+            if (text && text.length > 500) return text;
+          }
+        } catch (e) {}
+      }
+      return null;
+    }
 
-      const nowEpoch = Math.floor(Date.now() / 1000);
-      buses.forEach(bus => {
-        let offset = bus.busIndex * (cycle / numBuses);
-        if (bus.direction === 0) {
-          let progRatio = ((nowEpoch + offset) % cycle) / cycle;
-          bus.progress = progRatio * maxDistance;
-        } else {
-          let backRatio = ((nowEpoch + offset + 300) % cycle) / cycle;
-          bus.progress = (1 - backRatio) * maxDistance;
-        }
-
-        const coord = getCoordinateAtDistance(bus.progress);
-        const marker = vehicleMarkers[bus.id];
-        if (marker) {
-          marker.setLatLng(coord);
+    function parseEbusData(html, dir, busList) {
+      if (!html) return;
+      
+      // 找出各站點在 HTML 中的位置並做區間擷取
+      let stnIndices = [];
+      stations.forEach(stn => {
+        let p = html.indexOf(stn.name);
+        if (p !== -1) {
+          stnIndices.push({ pos: p, stn: stn });
         }
       });
+      stnIndices.sort((a, b) => a.pos - b.pos);
 
-      // 每 0.5 秒更新一次 UI (小工具黑框 + 右側藍紅點 + 彈跳視窗)
-      uiTimer += dt;
-      if (uiTimer > 0.5) {
-        uiTimer = 0;
-        updateBottomWidget();
-        updateRightStationRailDots();
+      for (let i = 0; i < stnIndices.length; i++) {
+        let item = stnIndices[i];
+        let endP = (i + 1 < stnIndices.length) ? stnIndices[i + 1].pos : (item.pos + 200);
+        let chunk = html.substring(item.pos, endP).replace(/<[^>]+>/g, ' ');
 
-        // 若車站彈出視窗正在開啟，即時更新其倒數秒數
-        if (document.getElementById('stationModal').classList.contains('open') && selectedModalStationId) {
-          const stn = stations.find(s => s.id === selectedModalStationId);
-          renderModalStationTimes(stn);
+        // 1. 車牌比對：若該站點旁邊出現車牌號碼，代表該車輛真實停靠/行駛於此站
+        let plateMatch = chunk.match(/([A-Z0-9]{2,4}-[A-Z0-9]{3,4})/i);
+        if (plateMatch) {
+          let plate = plateMatch[1].toUpperCase();
+          busList.push({
+            id: plate,
+            plate: plate,
+            direction: dir,
+            stationName: item.stn.name,
+            progress: item.stn.dist,
+            speed: 28,
+            status: '營運中'
+          });
+        }
+
+        // 2. 到站狀態預估 (進站中、將到站、約X分、末班車已過)
+        let etaMatch = chunk.match(/(進站中|將到站|約\s*\d+\s*分|未發車|末班[車已過]*)/);
+        if (etaMatch) {
+          liveStationEtas[dir][item.stn.id] = etaMatch[1].trim();
         }
       }
+    }
 
+    async function fetchLiveRealTime() {
+      const goUrl = 'https://ebus.gov.taipei/EBus/VsSimpleMap?rid=10961&sec=0';
+      const backUrl = 'https://ebus.gov.taipei/EBus/VsSimpleMap?rid=10961&sec=1';
+
+      try {
+        const [goHtml, backHtml] = await Promise.all([
+          fetchWithProxy(goUrl),
+          fetchWithProxy(backUrl)
+        ]);
+
+        if (goHtml || backHtml) {
+          let activeBuses = [];
+          if (goHtml) parseEbusData(goHtml, 0, activeBuses);
+          if (backHtml) parseEbusData(backHtml, 1, activeBuses);
+
+          // 成功取得官方數據！
+          isLiveConnected = true;
+          buses = activeBuses;
+          syncVehicleMarkers(buses);
+
+          const statusEl = document.getElementById('liveStatusText');
+          if (statusEl) {
+            statusEl.innerHTML = `🟢 官方即時連線 (線上 <b>${buses.length}</b> 輛)`;
+            statusEl.style.color = 'var(--accent-green)';
+          }
+
+          updateBottomWidget();
+          updateRightStationRailDots();
+          if (document.getElementById('stationModal').classList.contains('open') && selectedModalStationId) {
+            const stn = stations.find(s => s.id === selectedModalStationId);
+            renderModalStationTimes(stn);
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('Live fetch failed, staying on last state:', err);
+      }
+
+      // 若未成功連線，標註狀態
+      const statusEl = document.getElementById('liveStatusText');
+      if (statusEl && !isLiveConnected) {
+        statusEl.innerHTML = '🟠 連線逾時 (重試中)';
+        statusEl.style.color = 'var(--accent-gold)';
+      }
+    }
+
+    function triggerManualRefresh() {
+      const statusEl = document.getElementById('liveStatusText');
+      if (statusEl) statusEl.innerHTML = '🔄 正在更新即時動態...';
+      fetchLiveRealTime();
+    }
+
+    // =========================================================
+    // 9. 動畫循環與定時器 (每 20 秒自動向官方更新一次真實資料)
+    // =========================================================
+    function animate() {
+      // 隨機微小浮動讓標記生動
+      updateBottomWidget();
       requestAnimationFrame(animate);
     }
 
     // 初始化執行
     initRightStationRail();
     updateBottomWidget();
-    updateRightStationRailDots();
     fitRouteBounds();
+    
+    // 啟動官方真實連線抓取
+    fetchLiveRealTime();
+    setInterval(fetchLiveRealTime, 20000); // 每 20 秒自動輪詢官方即時數據
+    
     requestAnimationFrame(animate);
   </script>
 </body>
